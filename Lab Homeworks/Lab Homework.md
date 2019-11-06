@@ -1,7 +1,7 @@
 
               __Laboratory Homework__
               
-***I. Controlling an RGB Led using 3 potentiometers
+***I. Controlling an RGB Led using 3 potentiometers***
 
 **1. Introduction**
   An RGB Led has three tiny leds of 3 primary colors(red, green and blue) where a terminal is common for all, some of them have positive terminal, known as anode, and some of them have negative anode, known as terminal. When different voltage is applied to different LEDs, they make a mixture and produce everal thousands of colors.(*This example I used a RGB Led with  a common negative terminal or cathode*)
