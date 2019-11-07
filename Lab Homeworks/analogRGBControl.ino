@@ -1,6 +1,6 @@
 const int potPinB = A0; 
-const int potPinG = A1;
-const int potPinR = A2;
+const int potPinG = A2;
+const int potPinR = A4;
 const int bluePin = 9; //BLUE
 const int greenPin = 10; //GREEN
 const int redPin = 11; //RED
