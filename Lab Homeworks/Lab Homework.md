@@ -11,3 +11,16 @@
  You can set it to diode and use - on the long pin and + on a small one. If it lights up, it’s common cathode. Otherwise, use + on the long pin and - on a small one, if it lights up now, then it’s common anode. )
     - The common cathode is connected to the ground and each LED's anode through a resistor to the output pin
     
+***II. Playing Pirates of Caribbean using active and passive piezo buzzers and, also, a pushbutton***
+**1.Introduction**
+Required items:
+- 1 passive buzzer which will be used to detect knocks
+- 1 active buzzer for sound(playing a melody for example)
+- 1 pushbutton
+- 2 resistors
+- Wires
+- Arduino Board
+- Connector cable
+    
+**2.Task:**
+Using the passive piezo buzzers we detect a knock and 5 seconds after the knock, with the active piezo buzzer we start a buzzer tone /sound / melody. The song can be stopped using a pushbutton
