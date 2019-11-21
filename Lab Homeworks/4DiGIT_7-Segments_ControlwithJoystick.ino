@@ -175,7 +175,7 @@ void loop() {
   for(int i = 0; i < noOfDisplays; i++){
     setDigit(i);
     displayNumber(currentNumber[i], currentDPState[i]);
-    delay(5);
+    delay(25);
   }  
-  delay(5);
+  delay(25);
 }
