@@ -177,5 +177,5 @@ void loop() {
     displayNumber(currentNumber[i], currentDPState[i]);
     delay(25);
   }  
-  delay(25);
+  
 }
