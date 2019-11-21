@@ -1,3 +1,4 @@
+//declare the pins
 const int pinA = 12;
 const int pinB = 8;
 const int pinC = 5;
@@ -12,37 +13,39 @@ const int pinD3 = 10;
 const int pinD4 = 13;
 
 const int pinSW = 4;
-const int pinX = A1;
-const int pinY = A0;
+const int pinOx = A0;
+const int pinOy = A1;
 
-int switchValue = 0;
-int xValue = 0;
-int yValue = 0;
+int switchValue;
+int xValue;
+int yValue;
 
 const int segSize = 8;
-
 const int noOfDisplays = 4;
 const int noOfDigits = 10;
 
 int dpState = LOW;
 int swState = LOW;
 
+int currentDisplay = 0;
+int minThreashold = 400;
+int maxThreashold = 600;
+
 bool joyMovedOx = false;
 bool joyMovedOy = false;
-int minTreshold = 400;
-int maxTreshold = 600;
 
-int currentDisplay = 0;
+//by default the current state of the display is locked
+bool switchPressedI = false;
+bool switchPressedII = true;
 
-bool swPressed = false;
-bool swPressed2 = true;
- 
 int currentNumber[noOfDisplays] = {
   0, 0, 0, 0
 };
-int currentDpState[noOfDisplays] = {
+
+int currentDPState[noOfDisplays] = {
   600, 0, 0, 0
 };
+
 int segments[segSize] = {
   pinA, pinB, pinC, pinD, pinE, pinF, pinG, pinDP
 };
@@ -65,116 +68,114 @@ byte digitMatrix[noOfDigits][segSize - 1] = {
   {1, 1, 1, 1, 0, 1, 1}  // 9
 };
 
-void showDigit(int num) {
-  for (int i = 0; i < noOfDisplays; i++) {
+void setDigit(int digit) {
+  for(int i = 0; i < noOfDigits; i++) {
     digitalWrite(digits[i], HIGH);
   }
-  digitalWrite(digits[num], LOW);
+  digitalWrite(digits[digit], LOW);    
 }
 
 void displayNumber(byte digit, int decimalPoint) {
   for (int i = 0; i < segSize - 1; i++) {
     digitalWrite(segments[i], digitMatrix[digit][i]);
   }
-
   analogWrite(segments[segSize - 1], decimalPoint);
 }
 
+
 void setup() {
-  for (int i = 0; i < segSize - 1; i++){
+  for(int i = 0; i < segSize - 1; i++) {
     pinMode(segments[i], OUTPUT);  
   }
-  for (int i = 0; i < noOfDisplays; i++){
-    pinMode(digits[i], OUTPUT);  
+
+  for(int i = 0; i < noOfDisplays; i++) {
+    pinMode(digits[i], OUTPUT);
   }
+
   pinMode(pinSW, INPUT_PULLUP);
-  pinMode(pinX, INPUT);
-  pinMode(pinY, INPUT);
-  Serial.begin(9600);
+  pinMode(pinOx, INPUT);
+  pinMode(pinOy, INPUT);
+  Serial.begin(9600); 
 }
 
-
 void loop() {
-
   swState = digitalRead(pinSW);
 
-  if(swState == LOW && swPressed == false && swPressed2 == true ){
-    swPressed = true;
-    swPressed2 = false;
-  }
-  else if(swState == LOW && swPressed == true && swPressed2 == true){
-    swPressed = false;
-    swPressed2 = false;
-  }
-  if(swState == HIGH){
-    swPressed2 = true;
+  if(swState == LOW)
+  {
+    if(switchPressedI == false && switchPressedII == true) {
+      switchPressedI = true;
+      switchPressedII = false;
+    }else if(switchPressedI == true && switchPressedII == true) {
+      switchPressedI = false;
+      switchPressedII = false;
+    }
+  }else{
+    switchPressedII = true;
   }
 
-  xValue = analogRead(pinX);
+  xValue = analogRead(pinOx);
 
-  if (xValue < minTreshold && joyMovedOx == false && swPressed == false){
-    if(currentDisplay < noOfDisplays){
-      currentDisplay++;
-      currentDpState[currentDisplay] = 600;
-      currentDpState[currentDisplay - 1] = 0;
-    }
-    else{
-      currentDisplay = 0;
-      currentDpState[currentDisplay] = 600;
-      currentDpState[noOfDisplays - 1] = 0;
-    }
-    joyMovedOx = true;
-      
-  }
-  
-  if(xValue >= maxTreshold && joyMovedOx == false && swPressed == false){
-    if(currentDisplay > 0){
+  if(xValue <= minThreashold && joyMovedOx == false && switchPressedI == false){
+    if(currentDisplay > 0) {
+      currentDPState[currentDisplay] = 0;
       currentDisplay--;
-      currentDpState[currentDisplay] = 600;
-      currentDpState[currentDisplay + 1] = 0;
+      currentDPState[currentDisplay] = 600;
     }
     else{
       currentDisplay = noOfDisplays - 1;
-      currentDpState[currentDisplay] = 600;
-      currentDpState[0] = 0;
+      currentDPState[0] = 0;
+      currentDPState[currentDisplay] = 600;
+    }
+    joyMovedOx =true; 
+  }
+
+  if(xValue >= maxThreashold && joyMovedOx == false && switchPressedI == false){
+    if(currentDisplay < noOfDisplays) {
+      currentDPState[currentDisplay] = 0;
+      currentDisplay++;
+      currentDPState[currentDisplay] = 600;
+    }
+    else{
+      currentDisplay = 0;
+      currentDPState[noOfDisplays - 1] = 0;
+      currentDPState[currentDisplay] = 600;
     }
     joyMovedOx = true;
   }
-  
-  if(xValue >= minTreshold && xValue <= maxTreshold){
+
+  if(xValue > minThreashold && xValue < maxThreashold){
     joyMovedOx = false;
   }
 
-  yValue = analogRead(pinY);
-        
-   if (yValue < minTreshold && joyMovedOy == false && swPressed == true){
-    if(currentNumber[currentDisplay] > 0){
+  yValue = analogRead(pinOy);
+
+  if (yValue <= minThreashold && joyMovedOy == false && switchPressedI == true) {
+    if(currentNumber[currentDisplay] > 0) {
       currentNumber[currentDisplay]--;
-    }
-    else{
+    }else {
       currentNumber[currentDisplay] = 9;
     }
     joyMovedOy = true;
-   }
-   
-   if(yValue >= maxTreshold && joyMovedOy == false && swPressed == true){
-     if(currentNumber[currentDisplay] < 9){
-       currentNumber[currentDisplay]++;
-     }
-     else{
-       currentNumber[currentDisplay] = 0;
-     }
-     joyMovedOy = true;
-   }
-   
-   if(yValue >= minTreshold && yValue <= maxTreshold){
-     joyMovedOy = false;
-   }
-
-  for(int i = 0; i < noOfDisplays; i++){
-    showDigit(i);
-    displayNumber(currentNumber[i], currentDpState[i]);
-    delay(5);
   }
 
+  if (yValue >= maxThreashold && joyMovedOy == false && switchPressedI == true) {
+    if(currentNumber[currentDisplay] < 9) {
+      currentNumber[currentDisplay]++;
+    }else {
+      currentNumber[currentDisplay] = 0;
+    }
+    joyMovedOy = true;
+  }
+
+  if(yValue >= minThreashold && yValue <= maxThreashold){
+     joyMovedOy = false;
+  }
+
+  for(int i = 0; i < noOfDisplays; i++){
+    setDigit(i);
+    displayNumber(currentNumber[i], currentDPState[i]);
+    delay(5);
+  }  
+  delay(5);
 }
