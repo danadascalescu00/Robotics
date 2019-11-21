@@ -68,6 +68,7 @@ byte digitMatrix[noOfDigits][segSize - 1] = {
   {1, 1, 1, 1, 0, 1, 1}  // 9
 };
 
+//activate the display received as parameter
 void setDigit(int digit) {
   for(int i = 0; i < noOfDigits; i++) {
     digitalWrite(digits[i], HIGH);
@@ -79,9 +80,9 @@ void displayNumber(byte digit, int decimalPoint) {
   for (int i = 0; i < segSize - 1; i++) {
     digitalWrite(segments[i], digitMatrix[digit][i]);
   }
+  //write the decimal point to pinDP
   analogWrite(segments[segSize - 1], decimalPoint);
 }
-
 
 void setup() {
   for(int i = 0; i < segSize - 1; i++) {
