@@ -1,0 +1,311 @@
+#include <LiquidCrystal.h>
+#include <EEPROM.h>
+
+//declare all the joystick pins
+const int pinSW = 10; // digital pin connected to switch output
+const int pinX = A0; // A0 - analog pin connected to X output
+const int pinY = A1; // A1 - analog pin connected to Y output
+
+//declare all the LCD pins
+const int RS = 12;
+const int enable = 11;
+const int D4 = 5;
+const int D5 = 4; 
+const int D6 = 3;
+const int D7 = 2;
+
+LiquidCrystal lcd(RS, enable, D4, D5, D6, D7);
+
+int switchValue;
+int xValue;
+int yValue;
+int countOx = 1;
+int countOy = 0;
+
+int switchState = LOW;
+
+bool joyMovedOx = false;
+bool joyMovedOy = false;
+
+int minThreshold = 400;
+int maxThreshold = 600;
+
+bool buttonPressed = false;
+bool buttonPressedII = false;
+bool switchPressedEXITGame = false;
+bool clearedOnce = false;
+bool clearedTwice = false;
+bool finished = false;
+bool passed = false;
+
+char incomingByte = 0; //for incoming serial data
+String inputString = "";
+bool stringComplete = false; //whether the user complete entering data(his/her name)
+
+int gameMode = 0;
+int nrButtonPressed = 0;
+
+int score = 0;
+int maxScore = 0;
+int HighScore = 0;
+
+int level = 1;
+int startingLevelValue = 0;
+
+// the current address in the EEPROM 
+int addr = 0;
+
+unsigned long previousMillis = 0;
+unsigned long previousMillisII = 0;
+const long interval = 5000;
+
+void setup() {
+  pinMode(pinSW, INPUT_PULLUP);
+  pinMode(pinX, INPUT);
+  pinMode(pinY, INPUT);
+
+  lcd.begin(16, 2);
+  lcd.print("Tetris Main Menu");
+
+  //EEPROM Clear -> sets all of the bytes of the EEPROM to 0
+//  for(int i = 0; i < EEPROM.length(); i++) {
+//    EEPROM.write(i, 0);
+//  }
+  
+  Serial.begin(9600); 
+}
+
+void print_name() {
+  
+  if(Serial.available() > 0) {
+    //read the incoming byte
+    incomingByte = (char)Serial.read();
+    
+    if(incomingByte == '\n'){
+      stringComplete = true;
+    }
+
+    if(stringComplete == true){
+      lcd.setCursor(8,1);
+      lcd.print(inputString);
+      stringComplete = false;
+    }
+    inputString += incomingByte;  
+  }
+}
+
+void display_menu(int count) {
+  //Setup the main menu
+  lcd.setCursor(0, 0);
+  lcd.print("Tetris Main Menu");
+  lcd.setCursor(1,1);
+  lcd.print("Play  Exit");
+
+  //set the current position of cursor
+  if(count == 1) {
+    lcd.setCursor(0, 1);
+    lcd.print(">Play  Settings");
+  }
+  if(count == 2) {
+    lcd.setCursor(0, 1);
+    lcd.print(" Play >Settings");
+  }
+  if(count == 3) {
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("Tetris Main Menu");
+    lcd.setCursor(0,1);
+    lcd.print(">Highscore");
+  }  
+}
+
+void display_settings() {
+  lcd.setCursor(0,0);
+  lcd.print("Level: ");
+  lcd.setCursor(7, 0);
+  lcd.print(startingLevelValue);
+  print_name();
+  lcd.setCursor(0,1);
+  lcd.print("Player: ");
+}
+
+void display_game() {
+  lcd.setCursor(0, 0);
+  lcd.print("Lives:3");
+  lcd.setCursor(8, 0);
+  lcd.print("Level:");
+  lcd.setCursor(14,0);
+  lcd.print(level);
+  score = 3*level;
+  lcd.setCursor(0,1);
+  lcd.print("Score:");
+  lcd.setCursor(6,1);
+  lcd.print(score);
+}
+
+void finished_game() {
+  if(clearedTwice == false){
+        lcd.clear();
+        clearedTwice = true;
+  }
+  lcd.setCursor(0,0);
+  lcd.print("Congratulation");
+}
+
+void loop() {
+  
+  HighScore = EEPROM.read(addr);
+  yValue = analogRead(pinY);
+  switchValue = digitalRead(pinSW);
+
+  if(switchValue == LOW and buttonPressed == false)
+  {
+    //  Exit game and return to the main menu
+    if((gameMode == 1 and switchPressedEXITGame == true) or (gameMode == 2 and switchPressedEXITGame == true) or(gameMode == 3 and switchPressedEXITGame)) {
+      gameMode = 0;
+      buttonPressed = true;
+      clearedOnce = false;
+      nrButtonPressed = 0;
+      switchPressedEXITGame = false;
+    }else {
+      gameMode = nrButtonPressed;
+      buttonPressed = true;
+      nrButtonPressed = 0;
+    }
+  }
+
+  if(switchValue == HIGH) {
+    buttonPressed = false;
+  }
+
+  // Currently the main menu is shown
+  if(gameMode == 0) {
+    if(clearedOnce == false) {
+      lcd.clear();
+      clearedOnce = true;
+    }
+    
+    lcd.setCursor(0,0);
+    lcd.print("Tetris Main Menu");
+    
+    xValue = analogRead(pinX);
+    
+    if(xValue <= minThreshold && joyMovedOx == false) {
+      countOx = countOx - 1;
+      if(countOx < 1) {
+        countOx = 3;
+      }
+      joyMovedOx = true;
+    }
+
+    if(xValue >= maxThreshold && joyMovedOx == false) {
+      countOx = countOx + 1;
+      if(countOx > 3) {
+        countOx = 1;  
+      }
+      joyMovedOx = true;
+    }
+
+    if(xValue > minThreshold && xValue < maxThreshold) {
+      joyMovedOx = false; 
+    }
+
+    if(joyMovedOx == true) {
+      display_menu(countOx);  
+    }
+
+    switchValue = digitalRead(pinSW);
+    if(switchValue == LOW) {
+      buttonPressedII = true;
+    }
+
+    if(buttonPressed == false and buttonPressedII == true) {
+      nrButtonPressed = countOx;
+      buttonPressedII = false;
+      clearedOnce = false;
+    }
+  }
+
+  if(gameMode == 2) {
+    if(clearedOnce == false) {
+      lcd.clear();
+      clearedOnce = true;
+      buttonPressed = true;
+      buttonPressedII = false;
+    }
+    display_settings();
+
+    yValue = analogRead(pinY);
+    if(buttonPressed == false and buttonPressedII == false) {
+      if(yValue <= minThreshold and joyMovedOy == false) {
+        countOy = countOy + 1;
+        joyMovedOy = true;
+      }
+      
+      if(yValue >= maxThreshold and joyMovedOy == false) {
+        countOy = countOy - 1;
+        if(countOy < 0) {
+          countOy = 0;
+        }
+        joyMovedOy = true;
+      }
+
+      if(yValue > minThreshold and yValue < maxThreshold) {
+        joyMovedOy = false;
+      }
+
+      if(joyMovedOy == true) {
+        startingLevelValue = countOy;
+        display_settings();
+      }
+      switchValue = digitalRead(pinSW);
+      if(switchValue == LOW) {
+        buttonPressed = true;
+        switchValue = HIGH;
+      }
+
+      if(buttonPressed == true and buttonPressedII == false) {
+        print_name();
+        buttonPressedII = true;
+      }
+
+      if(buttonPressed == true and buttonPressedII == true and switchPressedEXITGame == false) {
+        switchValue = digitalRead(pinSW);
+        if(switchValue == LOW) {
+          switchPressedEXITGame = true;
+          switchValue = HIGH;
+        }
+      }
+    }
+  }
+
+  if(gameMode == 1) {
+    if(clearedOnce == false) {
+      lcd.clear();
+      clearedOnce = true;
+      level = startingLevelValue;
+      previousMillis = millis();
+    }
+    display_game();
+    if(passed == false and finished == false) {
+      if(millis() - previousMillis >= interval) {
+        level += 1;
+        passed = true;
+        Serial.print("pass");
+      }
+    }
+    display_game();
+    if(passed == true and finished == false) {
+      if(millis() - previousMillis >= 2 * interval) {
+          finished = true;
+          passed = false;
+      }
+    }
+    
+    if(passed == false and finished == true) {
+      finished_game();
+    }
+    
+  }
+    
+}
