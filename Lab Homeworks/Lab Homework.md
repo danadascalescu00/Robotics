@@ -27,7 +27,8 @@ Required items:
 **2.Task:**
 Using the passive piezo buzzers we detect a knock and 5 seconds after the knock, with the active piezo buzzer we start a buzzer tone /sound / melody. The song can be stopped using a pushbutton
 
-***III. Individually controlling each digit of the segment with the joystick
+
+***III. Individually controlling each digit of the segment with the joystick***
 
 Required items:
 - 1 * 4 digit 7-segment display
@@ -37,5 +38,20 @@ Required items:
 - Arduino
 - Connector cable
 
-**Task:
+**Task:**
 Individually controlling each digit of the segment with the joystick. Using the X-axis we cycle through the digit and choose which one to modify. If you press the button the section will be locked. After that, use the Y-axis to modify the value of the digit, both up and down.
+
+
+***IV. Creating a game menu using a LCD Display and a joystick***
+
+Required items:
+- 1 * LCD Display
+- 1 * potentiometer
+- 1 * joystick
+- Resistors
+- Wires
+- Arduino
+- Connector cable
+
+**How it works:**
+https://www.youtube.com/watch?v=S-upovX4K9Q
