@@ -30,13 +30,17 @@ bool joyMovedOy = false;
 int minThreshold = 400;
 int maxThreshold = 600;
 
-bool buttonPressed = false;
-bool buttonPressedII = false;
-bool switchPressedEXITGame = false;
-bool clearedOnce = false;
-bool clearedTwice = false;
-bool finished = false;
-bool passed = false;
+boolean buttonPressed = false;
+boolean buttonPressedII = false;
+boolean switchPressedEXITGame = false;
+boolean clearedOnce = false;
+boolean clearedTwice = false;
+boolean finished = false;
+boolean startAgain = false;
+boolean passed = false;
+boolean firstDisplay = false;
+boolean secondDisplay = false;
+boolean thirdDisplay = false;
 
 char incomingByte = 0; //for incoming serial data
 String inputString = "";
@@ -46,8 +50,7 @@ int gameMode = 0;
 int nrButtonPressed = 0;
 
 int score = 0;
-int maxScore = 0;
-int HighScore = 0;
+int Highscore = 0;
 
 int level = 1;
 int startingLevelValue = 0;
@@ -58,6 +61,8 @@ int addr = 0;
 unsigned long previousMillis = 0;
 unsigned long previousMillisII = 0;
 const long interval = 5000;
+const long intervalFirstDisplay = 18000;
+const long intervalSecondDisplay = 6000;
 
 void setup() {
   pinMode(pinSW, INPUT_PULLUP);
@@ -99,7 +104,7 @@ void display_menu(int count) {
   lcd.setCursor(0, 0);
   lcd.print("Tetris Main Menu");
   lcd.setCursor(1,1);
-  lcd.print("Play  Exit");
+  lcd.print("Play ");
 
   //set the current position of cursor
   if(count == 1) {
@@ -143,30 +148,86 @@ void display_game() {
   lcd.print(score);
 }
 
-void finished_game() {
-  if(clearedTwice == false){
-        lcd.clear();
-        clearedTwice = true;
+void game_finished() {
+  if(startAgain == false) {
+    if(clearedTwice == false){
+      lcd.clear();
+      clearedTwice = true;
+      previousMillis = millis();
+    }
+
+    if(millis() - previousMillis > 3 * intervalFirstDisplay) {
+      firstDisplay = true;
+    }
+
+    if(millis() - previousMillis > 3 * intervalFirstDisplay + intervalSecondDisplay) {
+      secondDisplay = true;
+    }
+
+    if(millis() - previousMillis > 4 * intervalFirstDisplay + intervalSecondDisplay - 16000) {
+      thirdDisplay = true;
+    }
+   
+    if(firstDisplay == false) {
+      lcd.setCursor(0,0);
+      lcd.print("Congratulations!");
+      firstDisplay == true;
+    }
+
+    if(firstDisplay == true and secondDisplay == false) {
+      lcd.setCursor(0, 0);
+      lcd.print("  YOU FINISHED  ");
+      lcd.setCursor(0, 1);
+      lcd.print("THE TETRIS GAME!");      
+    }
+    
+    if(firstDisplay == true and secondDisplay == true and thirdDisplay == false) {
+      lcd.setCursor(0, 0);
+      lcd.print("Press button to ");
+      lcd.setCursor(0, 1);
+      lcd.print("      exit      ");
+      
+      switchValue = digitalRead(pinSW);
+      if(switchValue == LOW) {
+        buttonPressed = true;
+      }
+
+      if(buttonPressed == true) {
+        startAgain = true;
+      }
+      
+    }
+  }
+}
+
+void display_highscore() {
+  if(clearedOnce == false) {
+    lcd.clear();
+    clearedOnce = true;
   }
   lcd.setCursor(0,0);
-  lcd.print("Congratulation");
+  lcd.print("HIGHSCORE: ");
+  lcd.setCursor(11,0);
+  lcd.print(Highscore);
 }
 
 void loop() {
   
-  HighScore = EEPROM.read(addr);
+  Highscore = EEPROM.read(addr);
+  
   yValue = analogRead(pinY);
   switchValue = digitalRead(pinSW);
 
   if(switchValue == LOW and buttonPressed == false)
   {
     //  Exit game and return to the main menu
-    if((gameMode == 1 and switchPressedEXITGame == true) or (gameMode == 2 and switchPressedEXITGame == true) or(gameMode == 3 and switchPressedEXITGame)) {
+    if((gameMode == 1 and switchPressedEXITGame == true) or (gameMode == 2 and switchPressedEXITGame == true) or (gameMode == 3 and switchPressedEXITGame) or (gameMode == 4 and startAgain == true)) {
       gameMode = 0;
       buttonPressed = true;
       clearedOnce = false;
       nrButtonPressed = 0;
       switchPressedEXITGame = false;
+      startAgain = false;
     }else {
       gameMode = nrButtonPressed;
       buttonPressed = true;
@@ -238,15 +299,15 @@ void loop() {
     yValue = analogRead(pinY);
     if(buttonPressed == false and buttonPressedII == false) {
       if(yValue <= minThreshold and joyMovedOy == false) {
-        countOy = countOy + 1;
-        joyMovedOy = true;
-      }
-      
-      if(yValue >= maxThreshold and joyMovedOy == false) {
         countOy = countOy - 1;
         if(countOy < 0) {
           countOy = 0;
         }
+        joyMovedOy = true;
+      }
+      
+      if(yValue >= maxThreshold and joyMovedOy == false) {
+        countOy = countOy + 1;
         joyMovedOy = true;
       }
 
@@ -258,6 +319,7 @@ void loop() {
         startingLevelValue = countOy;
         display_settings();
       }
+      
       switchValue = digitalRead(pinSW);
       if(switchValue == LOW) {
         buttonPressed = true;
@@ -291,21 +353,34 @@ void loop() {
       if(millis() - previousMillis >= interval) {
         level += 1;
         passed = true;
-        Serial.print("pass");
       }
     }
-    display_game();
-    if(passed == true and finished == false) {
+    
+    if(passed == true) {
       if(millis() - previousMillis >= 2 * interval) {
+          display_settings();
           finished = true;
-          passed = false;
+          gameMode = 4;
       }
     }
-    
-    if(passed == false and finished == true) {
-      finished_game();
+
+  }
+
+  if(gameMode == 4) {
+    if(score > Highscore) {
+      Highscore = score;
+      EEPROM.write(addr, Highscore);
+      addr++;
+      if(addr == EEPROM.length()) {
+        addr = 0;
+      }
     }
-    
+    previousMillis = 0;
+    game_finished();
+  }
+
+  if(gameMode == 3) {
+    display_highscore();
   }
     
 }
