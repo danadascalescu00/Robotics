@@ -12,6 +12,8 @@ const char startMsg[]   = "Press the red button to get started";
 const char endMsg[]     = "Press the red button to exit";
 const char githubLink[] = "https://github.com/danadascalescu00/Robotics/tree/master/Matrix%20Game";
 
+String Name = "Unknown";
+
 const int redPin   = A2;
 const int greenPin = A3;
 const int bluePin  = A5;
@@ -69,9 +71,15 @@ int maxThreshold = 600;
 int buttonState = HIGH;  // the current reading from the input pin
 int lastButtonState = HIGH; // the previous reading from the input pin
 
+unsigned int level = 1;
 unsigned int startingLevel = 1;
 unsigned int option = 1;
-unsigned int displacement = 1; // for displaying informations
+unsigned int displacement = 1;
+unsigned int score = 0;
+unsigned int Highscore = 0;
+
+// the current address in the EEPROM 
+int addr = 0;
 
 byte downArrow[] = {
   B00100,
@@ -274,9 +282,11 @@ void option_choosed(unsigned int option) {
       break;
     }
     case 2: {
+      display_settings();
       break;
     }
     case 3: {
+      display_highscore();
       break;
     }
     case 4: {
@@ -287,13 +297,177 @@ void option_choosed(unsigned int option) {
 }
 
 void display_settings() {
-  lcd.setCursor(0,0);
-  lcd.print("Level: ");
-  lcd.setCursor(7,0);
-  lcd.print(startingLevel);
-  lcd.setCursor(0,1);
-  lcd.print("Player: ");
-  lcd.setCursor(7,1);
+  yValue = analogRead(pinY);
+  if(yValue < minThreshold) {
+    if(joyMovedOy == false) {
+      displacement -= 1;
+      joyMovedOy = true;
+    }
+    if(displacement < 1) {
+      displacement = 1;
+    }
+  }else {
+    if(yValue > maxThreshold) {
+      if(joyMovedOy == false) {
+        displacement += 1;
+        joyMovedOy = true;
+      }
+      if(displacement > 2) {
+        displacement = 2;
+      }
+    }else{
+      joyMovedOy = false;
+    }
+  }
+
+  if(joyMovedOy == true) {
+    lcd.clear();
+  }
+
+  switch(displacement) {
+    case 1: {
+      lcd.setCursor(0,0);
+      lcd.print("Start level: ");
+      lcd.setCursor(13,0);
+      lcd.print(startingLevel);
+      lcd.setCursor(0,1);
+      lcd.print("Player: ");
+      lcd.setCursor(8,1);
+      lcd.print(Name);
+
+      // scroll arrow:
+      lcd.setCursor(15,0);
+      lcd.write(REVERSE_ARROW);
+      break;
+    }
+    case 2: {
+      lcd.setCursor(0,0);
+      if(millis() > lastShown + 500) {
+        lastShown = millis();
+        if(endMsg[currMsgBit] == '\0') {
+          currMsgBit = 0;        
+        }else {
+          lcd_printMsg(endMsg + currMsgBit);
+          currMsgBit++;
+        }
+      }
+
+      // scroll arrow:
+      lcd.setCursor(15,1);
+      lcd.write(ARROW);
+      
+      int reading = digitalRead(pushButton);
+      // check to see if the button was pressed, and we have waited long enough since
+      // the last press to ignore any noise:
+      if(reading != lastButtonState) {
+        // reset the debouncing timer
+        lastDebounceTime = millis();
+      }
+      if((millis() - lastDebounceTime) > debounceDelay) {
+        if(reading != buttonState) {
+          buttonState = reading;
+        }
+      }
+      // save the reading:
+      lastButtonState = reading;
+      if(buttonState == LOW) {
+        lcd.clear();
+        mainMenu = true;
+        pressToStart = true;
+        firstTime = false;
+        displacement = 1;
+        currMsgBit = 0;
+     }
+     break;
+    }
+  }  
+}
+
+void display_highscore() {
+  yValue = analogRead(pinY);
+  if(yValue < minThreshold) {
+    if(joyMovedOy == false) {
+      displacement -= 1;
+      joyMovedOy = true;
+    }
+    if(displacement < 1) {
+      displacement = 1;
+    }
+  }else {
+    if(yValue > maxThreshold) {
+      if(joyMovedOy == false) {
+        displacement += 1;
+        joyMovedOy = true;
+      }
+      if(displacement > 2) {
+        displacement = 2;
+      }
+    }else{
+      joyMovedOy = false;
+    }
+  }
+
+  if(joyMovedOy == true) {
+    lcd.clear();
+  }
+
+  switch(displacement) {
+    case 1: {
+      lcd.setCursor(3,0);
+      lcd.print("HIGHSCORE");
+      lcd.setCursor(13,0);
+      lcd.setCursor(0,1);
+      lcd.print(Name);
+      unsigned int pos = Name.length();
+      lcd.setCursor(pos+2,1);
+      lcd.print(Highscore);
+
+      // scroll arrow:
+      lcd.setCursor(15,0);
+      lcd.write(REVERSE_ARROW);
+      break;
+    }
+    case 2: {
+      lcd.setCursor(0,0);
+      if(millis() > lastShown + 500) {
+        lastShown = millis();
+        if(endMsg[currMsgBit] == '\0') {
+          currMsgBit = 0;        
+        }else {
+          lcd_printMsg(endMsg + currMsgBit);
+          currMsgBit++;
+        }
+      }
+
+      // scroll arrow:
+      lcd.setCursor(15,1);
+      lcd.write(ARROW);
+      
+      int reading = digitalRead(pushButton);
+      // check to see if the button was pressed, and we have waited long enough since
+      // the last press to ignore any noise:
+      if(reading != lastButtonState) {
+        // reset the debouncing timer
+        lastDebounceTime = millis();
+      }
+      if((millis() - lastDebounceTime) > debounceDelay) {
+        if(reading != buttonState) {
+          buttonState = reading;
+        }
+      }
+      // save the reading:
+      lastButtonState = reading;
+      if(buttonState == LOW) {
+        lcd.clear();
+        mainMenu = true;
+        pressToStart = true;
+        firstTime = false;
+        displacement = 1;
+        currMsgBit = 0;
+     }
+     break;
+    }
+  }
 }
 
 void display_info() {
@@ -352,6 +526,8 @@ void display_info() {
       }
 
       // scroll arrow:
+      lcd.setCursor(14,0);
+      lcd.write(ARROW);
       lcd.setCursor(15,0);
       lcd.write(REVERSE_ARROW);
       
@@ -364,6 +540,8 @@ void display_info() {
       lcd.print("Dana Dascalescu");
       
       // scroll arrow:
+      lcd.setCursor(14,0);
+      lcd.write(ARROW);
       lcd.setCursor(15,0);
       lcd.write(REVERSE_ARROW);
       
@@ -400,9 +578,12 @@ void display_info() {
       // save the reading:
       lastButtonState = reading;
       if(buttonState == LOW) {
-          mainMenu = true;
-          pressToStart = true;
-          firstTime = false;
+        lcd.clear();
+        mainMenu = true;
+        pressToStart = true;
+        firstTime = false;
+        displacement = 1;
+        currMsgBit = 0;
       }
       break;
     }
@@ -427,6 +608,8 @@ void setup() {
 }
 
 void loop() {
+  Highscore = EEPROM.read(addr);
+  
   if(introductionDisplayed == false) {
     display_introduction();
   }
