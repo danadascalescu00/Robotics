@@ -1,386 +1,770 @@
-#include <LiquidCrystal.h>
+#include "pitches.h"
 #include <EEPROM.h>
+#include <LiquidCrystal.h>
 
-//declare all the joystick pins
-const int pinSW = 10; // digital pin connected to switch output
-const int pinX = A0; // A0 - analog pin connected to X output
-const int pinY = A1; // A1 - analog pin connected to Y output
+#define ARROW         byte(0)
+#define REVERSE_ARROW byte(1)
+
+uint8_t ch = 0;
+uint16_t currMsgBit = 0;
+
+const char startMsg[]   = "Press the red button to get started";
+const char endMsg[]     = "Press the red button to exit";
+const char githubLink[] = "https://github.com/danadascalescu00/Robotics/tree/master/Matrix%20Game";
+
+String Name = "Unknown";
+
+const int redPin   = A2;
+const int greenPin = A3;
+const int bluePin  = A5;
+
+const int pinSW = 9; // digtal pin connected to switch output
+const int pinX  = A0; // A0 - analog pin connected to X output
+const int pinY  = A1; // A1 - analog pin connceted to Y output
+
+const int buzzerPin = 6;
+
+const int pushButton = 8;
 
 //declare all the LCD pins
-const int RS = 12;
+const int RS     = 12;
 const int enable = 11;
-const int D4 = 5;
-const int D5 = 4; 
-const int D6 = 3;
-const int D7 = 2;
+const int D4     = 5;
+const int D5     = 4; 
+const int D6     = 3;
+const int D7     = 2;
 
 LiquidCrystal lcd(RS, enable, D4, D5, D6, D7);
 
-int switchValue;
-int xValue;
-int yValue;
-int countOx = 1;
-int countOy = 0;
+unsigned int redValue   = 0;
+unsigned int blueValue  = 0;
+unsigned int greenValue = 0;
 
+unsigned long previousMillisBlinking = 0;
+unsigned long lastLevelMillis = 0;
+unsigned long lastPhaseDuration = 0;
+unsigned long lastShown = 0;
+unsigned long lastDebounceTime = 0; // the last time the output pin was toggled
+unsigned long debounceDelay = 50; // the debounce time; increase if the output flickers
+
+const long interval = 250;
+const long passingLevelInterval = 2500;
+const long phaseInterval = 2000;
+
+int xValue, yValue;
 int switchState = LOW;
 
-bool joyMovedOx = false;
-bool joyMovedOy = false;
+boolean joyMovedOx = false;
+boolean joyMovedOy = false;
+boolean firstTime = false;
+boolean phaseI = false;
+boolean introductionDisplayed = false;
+boolean cleared = false;
+boolean clearedOnce = false;
+boolean mainMenu = false;
+boolean pressToStart = false;
+boolean pressedToExit = false;
+boolean setState = false;
+boolean buttonPressed = true;
 
 int minThreshold = 400;
 int maxThreshold = 600;
 
-boolean buttonPressed = false;
-boolean buttonPressedII = false;
-boolean switchPressedEXITGame = false;
-boolean clearedOnce = false;
-boolean clearedTwice = false;
-boolean finished = false;
-boolean startAgain = false;
-boolean passed = false;
-boolean firstDisplay = false;
-boolean secondDisplay = false;
-boolean thirdDisplay = false;
+int buttonState = HIGH;  // the current reading from the input pin
+int lastButtonState = HIGH; // the previous reading from the input pin
 
-char incomingByte = 0; //for incoming serial data
-String inputString = "";
-bool stringComplete = false; //whether the user complete entering data(his/her name)
-
-int gameMode = 0;
-int nrButtonPressed = 0;
-
-int score = 0;
-int Highscore = 0;
-
-int level = 1;
-int startingLevelValue = 0;
-
+unsigned int level = 1;
+unsigned int startingLevel = 1;
+unsigned int option = 1;
+unsigned int displacement = 1;
+unsigned int score = 0;
+unsigned int Highscore = 0;
+int letter = 0;
+int pos = 0;
 // the current address in the EEPROM 
 int addr = 0;
 
-unsigned long previousMillis = 0;
-unsigned long previousMillisII = 0;
-const long interval = 5000;
-const long intervalFirstDisplay = 18000;
-const long intervalSecondDisplay = 6000;
+byte downArrow[] = {
+  B00100,
+  B00100,
+  B00100,
+  B00100,
+  B00100,
+  B10101,
+  B01110,
+  B00100
+};
 
-void setup() {
-  pinMode(pinSW, INPUT_PULLUP);
-  pinMode(pinX, INPUT);
-  pinMode(pinY, INPUT);
+byte upArrow[] = {
+  B00100,
+  B01110,
+  B10101,
+  B00100,
+  B00100,
+  B00100,
+  B00100,
+  B00100
+};
 
-  lcd.begin(16, 2);
-  lcd.print("Tetris Main Menu");
+// "We wish you a Merry Christmas"
+int wish_melody[] = {
+  NOTE_B3, 
+  NOTE_F4, NOTE_F4, NOTE_G4, NOTE_F4, NOTE_E4,
+  NOTE_D4, NOTE_D4, NOTE_D4,
+  NOTE_G4, NOTE_G4, NOTE_A4, NOTE_G4, NOTE_F4,
+  NOTE_E4, NOTE_E4, NOTE_E4,
+  NOTE_A4, NOTE_A4, NOTE_B4, NOTE_A4, NOTE_G4,
+  NOTE_F4, NOTE_D4, NOTE_B3, NOTE_B3,
+  NOTE_D4, NOTE_G4, NOTE_E4,
+  NOTE_F4
+};
 
-  //EEPROM Clear -> sets all of the bytes of the EEPROM to 0
-//  for(int i = 0; i < EEPROM.length(); i++) {
-//    EEPROM.write(i, 0);
-//  }
+int wish_tempo[] = {
+  4,
+  4, 8, 8, 8, 8,
+  4, 4, 4,
+  4, 8, 8, 8, 8,
+  4, 4, 4,
+  4, 8, 8, 8, 8,
+  4, 4, 8, 8,
+  4, 4, 4,
+  2
+};
+
+void levelPassed() {
+  unsigned long currentMillisBlinking = millis();
+  redValue = blueValue = 0;
   
-  Serial.begin(9600); 
+  if(currentMillisBlinking - previousMillisBlinking >= interval) {
+    previousMillisBlinking = currentMillisBlinking;
+    if(greenValue == 255) {
+      greenValue = 0;
+    }else {
+      greenValue = 255;
+    }
+    SetColors(redValue, greenValue, blueValue);
+  }
 }
 
-void print_name() {
-  
-  if(Serial.available() > 0) {
-    //read the incoming byte
-    incomingByte = (char)Serial.read();
+void newLevel() {
+  levelPassed();
+  unsigned long newLevelMillis = millis();
+  if(newLevelMillis - lastLevelMillis >= passingLevelInterval) {
+    if(firstTime == false) {
+      lastLevelMillis = newLevelMillis;
+      firstTime = true;
+    }else {
+      switchState = HIGH;
+      lastLevelMillis = 0;
+      firstTime = false;
+      SetColors(0,0,0);
+    }
+  }
+}
+
+void SetColors(unsigned int Red, unsigned int Green, unsigned int Blue) {
+  analogWrite(redPin, Red);
+  analogWrite(greenPin, Green);
+  analogWrite(bluePin, Blue);  
+}
+
+void sing() {
+  int size = sizeof(wish_melody) / sizeof(int);
+  for (int thisNote = 0; thisNote < size; thisNote++) {
+    int noteDuration = 1000 / wish_tempo[thisNote];
+     buzz(buzzerPin, wish_melody[thisNote], noteDuration);
+     int pauseBetweenNotes = noteDuration * 1.30;
+     delay(pauseBetweenNotes);
+     buzz(buzzerPin, 0, noteDuration);
+  }
+}
+
+void buzz(int targetPin, long frequency, long length) {
+  long delayValue = 1000000 / frequency / 2; 
+  long numCycles = frequency * length / 1000; 
+  for (long i = 0; i < numCycles; i++) {
+    digitalWrite(targetPin, HIGH); 
+    delayMicroseconds(delayValue); 
+    digitalWrite(targetPin, LOW); 
+    delayMicroseconds(delayValue);
+  }
+}
+
+void display_introduction() {
+  unsigned long phaseDuration = millis();
+  if(phaseDuration - lastPhaseDuration >= phaseInterval) {
+    if(firstTime == false) {
+      firstTime = true;
+      lastPhaseDuration = phaseDuration;
+      lcd.setCursor(1,0);
+      lcd.print("Space Invaders");
+      lcd.setCursor(1,1);
+      lcd.print("The Retro Game");
+    }else {
+      if(phaseI == false) {
+        phaseI = true;
+        lastPhaseDuration = phaseDuration;
+      }else {
+        lcd.clear();
+        lcd.setCursor(4,0);
+        lcd.print("Christmas ");
+        lcd.setCursor(5,1);
+        lcd.print("Edition");
+        introductionDisplayed = true;
+        sing();
+        firstTime = false;
+      }
+    }
+  }
+}
+
+void display_menu(unsigned int option) {
+  // set the cursor:
+  switch(option){
+    case 1: {
+      lcd.setCursor(1,0);
+      lcd.print("Space Invaders");
+      lcd.setCursor(0,1);
+      lcd.print(">Play Settings");
+
+      // scroll arrow
+      lcd.setCursor(15,1);
+      lcd.write(REVERSE_ARROW);
+      break;
+    }
+    case 2: {
+      lcd.setCursor(1,0);
+      lcd.print("Space Invaders");
+      lcd.setCursor(0,1);
+      lcd.print("Play >Settings");
+
+      // scroll arrow
+      lcd.setCursor(15,1);
+      lcd.write(REVERSE_ARROW);
+      break;
+    }
+    case 3: {
+      lcd.setCursor(0,0);
+      lcd.print(">Highscore");
+      lcd.setCursor(0,1);
+      lcd.print("Info");
+
+      // scroll arrow
+      lcd.setCursor(15,1);
+      lcd.write(ARROW);
+      break;
+    }
+    case 4: {
+      lcd.setCursor(0,0);
+      lcd.print("Highscore");
+      lcd.setCursor(0,1);
+      lcd.print(">Info");
+
+      // scroll arrow
+      lcd.setCursor(15,1);
+      lcd.write(ARROW);
+      break;
+    }
     
-    if(incomingByte == '\n'){
-      stringComplete = true;
-    }
-
-    if(stringComplete == true){
-      lcd.setCursor(8,1);
-      lcd.print(inputString);
-      stringComplete = false;
-    }
-    inputString += incomingByte;  
   }
 }
 
-void display_menu(int count) {
-  //Setup the main menu
-  lcd.setCursor(0, 0);
-  lcd.print("Tetris Main Menu");
-  lcd.setCursor(1,1);
-  lcd.print("Play ");
+void lcd_printMsg(char *str) {
+  uint8_t ch = 0;
+  while(ch < 16 && str[ch] != '\0') {
+    lcd.print((char)str[ch++]);
+  }
+  while(ch++ < 16) {
+    lcd.print(" ");
+  }
+}
 
-  //set the current position of cursor
-  if(count == 1) {
-    lcd.setCursor(0, 1);
-    lcd.print(">Play  Settings");
+void option_choosed(unsigned int option) {
+  switch(option) {
+    case 1:{
+      break;
+    }
+    case 2: {
+      display_settings();
+      break;
+    }
+    case 3: {
+      display_highscore();
+      break;
+    }
+    case 4: {
+      display_info();
+      break;
+    }
   }
-  if(count == 2) {
-    lcd.setCursor(0, 1);
-    lcd.print(" Play >Settings");
-  }
-  if(count == 3) {
-    lcd.clear();
-    lcd.setCursor(0,0);
-    lcd.print("Tetris Main Menu");
-    lcd.setCursor(0,1);
-    lcd.print(">Highscore");
-  }  
 }
 
 void display_settings() {
-  lcd.setCursor(0,0);
-  lcd.print("Level: ");
-  lcd.setCursor(7, 0);
-  lcd.print(startingLevelValue);
-  print_name();
-  lcd.setCursor(0,1);
-  lcd.print("Player: ");
-}
+  if(buttonPressed == true) {
+    yValue = analogRead(pinY);
+    if(yValue < minThreshold) {
+      if(joyMovedOy == false) {
+        displacement -= 1;
+        joyMovedOy = true;
+      }
+      if(displacement < 1) {
+        displacement = 1;
+      }
+    }else {
+      if(yValue > maxThreshold) {
+        if(joyMovedOy == false) {
+          displacement += 1;
+          joyMovedOy = true;
+        }
+        if(displacement > 3) {
+          displacement = 3;
+        }
+      }else{
+        joyMovedOy = false;
+      }
+    }
 
-void display_game() {
-  lcd.setCursor(0, 0);
-  lcd.print("Lives:3");
-  lcd.setCursor(8, 0);
-  lcd.print("Level:");
-  lcd.setCursor(14,0);
-  lcd.print(level);
-  score = 3*level;
-  lcd.setCursor(0,1);
-  lcd.print("Score:");
-  lcd.setCursor(6,1);
-  lcd.print(score);
-}
-
-void game_finished() {
-  if(startAgain == false) {
-    if(clearedTwice == false){
+    if(joyMovedOy == true) {
       lcd.clear();
-      clearedTwice = true;
-      previousMillis = millis();
     }
+  }
 
-    if(millis() - previousMillis > 3 * intervalFirstDisplay) {
-      firstDisplay = true;
-    }
-
-    if(millis() - previousMillis > 3 * intervalFirstDisplay + intervalSecondDisplay) {
-      secondDisplay = true;
-    }
-
-    if(millis() - previousMillis > 4 * intervalFirstDisplay + intervalSecondDisplay - 16000) {
-      thirdDisplay = true;
-    }
-   
-    if(firstDisplay == false) {
+  switch(displacement) {
+    case 1: {
       lcd.setCursor(0,0);
-      lcd.print("Congratulations!");
-      firstDisplay == true;
-    }
+      lcd.print(">Start level: ");
+      lcd.setCursor(13,0);
+      lcd.print(startingLevel);
+      lcd.setCursor(0,1);
+      lcd.print(" Player: ");
+      lcd.setCursor(9,1);
+      lcd.print("_______");
 
-    if(firstDisplay == true and secondDisplay == false) {
-      lcd.setCursor(0, 0);
-      lcd.print("  YOU FINISHED  ");
-      lcd.setCursor(0, 1);
-      lcd.print("THE TETRIS GAME!");      
-    }
-    
-    if(firstDisplay == true and secondDisplay == true and thirdDisplay == false) {
-      lcd.setCursor(0, 0);
-      lcd.print("Press button to ");
-      lcd.setCursor(0, 1);
-      lcd.print("      exit      ");
-      
-      switchValue = digitalRead(pinSW);
+      // scroll arrow:
+      lcd.setCursor(15,0);
+      lcd.write(REVERSE_ARROW);
+
+      int switchValue = digitalRead(pinSW);
       if(switchValue == LOW) {
-        buttonPressed = true;
+        setState = !setState;
       }
 
-      if(buttonPressed == true) {
-        startAgain = true;
+      if(setState == true) {
+        // Set the starting level:
+        buttonPressed = false;
+        xValue = analogRead(pinX);
+        if(xValue < minThreshold) {
+          if(joyMovedOx == false) {
+            startingLevel -= 1;
+            joyMovedOx = true;
+          }
+          if(startingLevel < 1) {
+            startingLevel = 1;
+          }
+        }else {
+          if(xValue > maxThreshold) {
+            if(joyMovedOx == false) {
+              startingLevel += 1;
+              joyMovedOx = true;
+            }
+            if(startingLevel > 5) {
+              startingLevel = 5;
+            }
+          }else{
+            joyMovedOx = false;
+          }
+        }
+        
+        lcd.setCursor(13,0);
+        lcd.print(startingLevel);
+  
+        int switchValue = digitalRead(pinSW);
+        if(switchValue == LOW) {
+          buttonPressed = true;
+        }
       }
+    break;
+   }
+   case 2: {
+    lcd.setCursor(0,0);
+    lcd.print("Start level: ");
+    lcd.setCursor(13,0);
+    lcd.print(startingLevel);
+    lcd.setCursor(0,1);
+    lcd.print(">Player: ");
+    lcd.setCursor(9,1);
+    lcd.print("_______");
+
+    // scroll arrow:
+    lcd.setCursor(15,0);
+    lcd.write(REVERSE_ARROW);
+    break;
+   }
+   case 3: {
+      lcd.setCursor(0,0);
+      if(millis() > lastShown + 500) {
+        lastShown = millis();
+        if(endMsg[currMsgBit] == '\0') {
+          currMsgBit = 0;        
+        }else {
+          lcd_printMsg(endMsg + currMsgBit);
+          currMsgBit++;
+        }
+      }
+
+      // scroll arrow:
+      lcd.setCursor(15,1);
+      lcd.write(ARROW);
       
-    }
+      int reading = digitalRead(pushButton);
+      // check to see if the button was pressed, and we have waited long enough since
+      // the last press to ignore any noise:
+      if(reading != lastButtonState) {
+        // reset the debouncing timer
+        lastDebounceTime = millis();
+      }
+      if((millis() - lastDebounceTime) > debounceDelay) {
+        if(reading != buttonState) {
+          buttonState = reading;
+        }
+      }
+      // save the reading:
+      lastButtonState = reading;
+      if(buttonState == LOW) {
+        lcd.clear();
+        mainMenu = true;
+        pressToStart = true;
+        firstTime = false;
+        displacement = 1;
+        currMsgBit = 0;
+      }
+      break;
+    }  
   }
 }
 
 void display_highscore() {
-  if(clearedOnce == false) {
-    lcd.clear();
-    clearedOnce = true;
+  yValue = analogRead(pinY);
+  if(yValue < minThreshold) {
+    if(joyMovedOy == false) {
+      displacement -= 1;
+      joyMovedOy = true;
+    }
+    if(displacement < 1) {
+      displacement = 1;
+    }
+  }else {
+    if(yValue > maxThreshold) {
+      if(joyMovedOy == false) {
+        displacement += 1;
+        joyMovedOy = true;
+      }
+      if(displacement > 2) {
+        displacement = 2;
+      }
+    }else{
+      joyMovedOy = false;
+    }
   }
-  lcd.setCursor(0,0);
-  lcd.print("HIGHSCORE: ");
-  lcd.setCursor(11,0);
-  lcd.print(Highscore);
+
+  if(joyMovedOy == true) {
+    lcd.clear();
+  }
+
+  switch(displacement) {
+    case 1: {
+      lcd.setCursor(3,0);
+      lcd.print("HIGHSCORE");
+      lcd.setCursor(13,0);
+      lcd.setCursor(0,1);
+      lcd.print(Name);
+      unsigned int pos = Name.length();
+      lcd.setCursor(pos+2,1);
+      lcd.print(Highscore);
+
+      // scroll arrow:
+      lcd.setCursor(15,0);
+      lcd.write(REVERSE_ARROW);
+      break;
+    }
+    case 2: {
+      lcd.setCursor(0,0);
+      if(millis() > lastShown + 500) {
+        lastShown = millis();
+        if(endMsg[currMsgBit] == '\0') {
+          currMsgBit = 0;        
+        }else {
+          lcd_printMsg(endMsg + currMsgBit);
+          currMsgBit++;
+        }
+      }
+
+      // scroll arrow:
+      lcd.setCursor(15,1);
+      lcd.write(ARROW);
+      
+      int reading = digitalRead(pushButton);
+      // check to see if the button was pressed, and we have waited long enough since
+      // the last press to ignore any noise:
+      if(reading != lastButtonState) {
+        // reset the debouncing timer
+        lastDebounceTime = millis();
+      }
+      if((millis() - lastDebounceTime) > debounceDelay) {
+        if(reading != buttonState) {
+          buttonState = reading;
+        }
+      }
+      // save the reading:
+      lastButtonState = reading;
+      if(buttonState == LOW) {
+        lcd.clear();
+        mainMenu = true;
+        pressToStart = true;
+        firstTime = false;
+        displacement = 1;
+        currMsgBit = 0;
+     }
+     break;
+    }
+  }
+}
+
+void display_info() {
+  yValue = analogRead(pinY);
+  if(yValue < minThreshold) {
+    if(joyMovedOy == false) {
+      displacement -= 1;
+      joyMovedOy = true;
+    }
+    if(displacement < 1) {
+      displacement = 1;
+    }
+  }else {
+    if(yValue > maxThreshold) {
+      if(joyMovedOy == false) {
+        displacement += 1;
+        joyMovedOy = true;
+      }
+      if(displacement > 4) {
+        displacement = 4;
+      }
+    }else{
+      joyMovedOy = false;
+    }
+  }
+
+  if(joyMovedOy == true) {
+    lcd.clear();
+  }
+
+  switch(displacement) {
+    case 1: {
+      lcd.setCursor(1,0);
+      lcd.print("Space Invaders");
+      lcd.setCursor(0,1);
+      lcd.print("@UnibucRobotics");
+
+      // scroll arrow:
+      lcd.setCursor(15,0);
+      lcd.write(REVERSE_ARROW);
+      break;
+    }
+    case 2: {
+      lcd.setCursor(1,0);
+      lcd.print("GitHub Link:");
+      lcd.setCursor(0,1);
+
+      if(millis() > lastShown + 700) {
+        lastShown = millis();
+        if(githubLink[currMsgBit] == '\0') {
+          currMsgBit = 0;        
+        }else {
+          lcd_printMsg(githubLink + currMsgBit);
+          currMsgBit++;
+        }
+      }
+
+      // scroll arrow:
+      lcd.setCursor(14,0);
+      lcd.write(ARROW);
+      lcd.setCursor(15,0);
+      lcd.write(REVERSE_ARROW);
+      
+      break;
+    }
+    case 3: {
+      lcd.setCursor(1,0);
+      lcd.print("Creater:");
+      lcd.setCursor(0,1);
+      lcd.print("Dana Dascalescu");
+      
+      // scroll arrow:
+      lcd.setCursor(14,0);
+      lcd.write(ARROW);
+      lcd.setCursor(15,0);
+      lcd.write(REVERSE_ARROW);
+      
+      break;
+    }
+    case 4: {
+      lcd.setCursor(0,0);
+      if(millis() > lastShown + 500) {
+        lastShown = millis();
+        if(endMsg[currMsgBit] == '\0') {
+          currMsgBit = 0;        
+        }else {
+          lcd_printMsg(endMsg + currMsgBit);
+          currMsgBit++;
+        }
+      }
+
+      // scroll arrow:
+      lcd.setCursor(15,1);
+      lcd.write(ARROW);
+
+      int reading = digitalRead(pushButton);
+      // check to see if the button was pressed, and we have waited long enough since
+      // the last press to ignore any noise:
+      if(reading != lastButtonState) {
+        // reset the debouncing timer
+        lastDebounceTime = millis();
+      }
+      if((millis() - lastDebounceTime) > debounceDelay) {
+        if(reading != buttonState) {
+          buttonState = reading;
+        }
+      }
+      // save the reading:
+      lastButtonState = reading;
+      if(buttonState == LOW) {
+        lcd.clear();
+        mainMenu = true;
+        pressToStart = true;
+        firstTime = false;
+        displacement = 1;
+        currMsgBit = 0;
+      }
+      break;
+    }
+  }
+}
+
+void setup() {
+  pinMode(redPin, OUTPUT);
+  pinMode(greenPin, OUTPUT);
+  pinMode(bluePin, OUTPUT);
+  pinMode(pinSW, INPUT_PULLUP); //activate pull-up resistor on the pushbutton pin of joystick  
+  pinMode(buzzerPin, OUTPUT);
+  pinMode(pushButton, INPUT_PULLUP);
+  
+  lcd.begin(16, 2);
+  lcd.createChar(ARROW, upArrow);
+  lcd.home();
+  lcd.createChar(REVERSE_ARROW, downArrow);
+  lcd.home();
+  
+  Serial.begin(9600);
 }
 
 void loop() {
-  
   Highscore = EEPROM.read(addr);
   
-  yValue = analogRead(pinY);
-  switchValue = digitalRead(pinSW);
+  if(introductionDisplayed == false) {
+    display_introduction();
+  }
+  else {
+    int reading = digitalRead(pushButton);
+    // check to see if the button was pressed, and we have waited long enough since
+    // the last press to ignore any noise:
+    if(reading != lastButtonState) {
+      // reset the debouncing timer
+      lastDebounceTime = millis();
+    }
+    if((millis() - lastDebounceTime) > debounceDelay) {
+      if(reading != buttonState) {
+        buttonState = reading;
+      }
+    }
+    // save the reading:
+    lastButtonState = reading;
+ 
+    if(mainMenu == false && pressToStart == false) {
+      if(cleared == false){
+        lcd.clear();
+        cleared = true;
+      }
+      lcd.setCursor(1,0);
+      lcd.print("Space Invaders");
+      lcd.setCursor(0,1);
+      
+      if(millis() > lastShown + 500) {
+        lastShown = millis();
+        if(startMsg[currMsgBit] == '\0') {
+          currMsgBit = 0;        
+        }else {
+          lcd_printMsg(startMsg + currMsgBit);
+          currMsgBit++;
+        }
+      }
 
-  if(switchValue == LOW and buttonPressed == false)
-  {
-    //  Exit game and return to the main menu
-    if((gameMode == 1 and switchPressedEXITGame == true) or (gameMode == 2 and switchPressedEXITGame == true) or (gameMode == 3 and switchPressedEXITGame) or (gameMode == 4 and startAgain == true)) {
-      gameMode = 0;
-      buttonPressed = true;
-      clearedOnce = false;
-      nrButtonPressed = 0;
-      switchPressedEXITGame = false;
-      startAgain = false;
+      if(buttonState == LOW) {
+        mainMenu = true;
+        pressToStart = true;
+        firstTime = false;
+      }
     }else {
-      gameMode = nrButtonPressed;
-      buttonPressed = true;
-      nrButtonPressed = 0;
-    }
-  }
-
-  if(switchValue == HIGH) {
-    buttonPressed = false;
-  }
-
-  // Currently the main menu is shown
-  if(gameMode == 0) {
-    if(clearedOnce == false) {
-      lcd.clear();
-      clearedOnce = true;
-    }
-    
-    lcd.setCursor(0,0);
-    lcd.print("Tetris Main Menu");
-    
-    xValue = analogRead(pinX);
-    
-    if(xValue <= minThreshold && joyMovedOx == false) {
-      countOx = countOx - 1;
-      if(countOx < 1) {
-        countOx = 3;
-      }
-      joyMovedOx = true;
-    }
-
-    if(xValue >= maxThreshold && joyMovedOx == false) {
-      countOx = countOx + 1;
-      if(countOx > 3) {
-        countOx = 1;  
-      }
-      joyMovedOx = true;
-    }
-
-    if(xValue > minThreshold && xValue < maxThreshold) {
-      joyMovedOx = false; 
-    }
-
-    if(joyMovedOx == true) {
-      display_menu(countOx);  
-    }
-
-    switchValue = digitalRead(pinSW);
-    if(switchValue == LOW) {
-      buttonPressedII = true;
-    }
-
-    if(buttonPressed == false and buttonPressedII == true) {
-      nrButtonPressed = countOx;
-      buttonPressedII = false;
-      clearedOnce = false;
-    }
-  }
-
-  if(gameMode == 2) {
-    if(clearedOnce == false) {
-      lcd.clear();
-      clearedOnce = true;
-      buttonPressed = true;
-      buttonPressedII = false;
-    }
-    display_settings();
-
-    yValue = analogRead(pinY);
-    if(buttonPressed == false and buttonPressedII == false) {
-      if(yValue <= minThreshold and joyMovedOy == false) {
-        countOy = countOy - 1;
-        if(countOy < 0) {
-          countOy = 0;
+      // Main Menu:
+      if(mainMenu == true) {
+        if(clearedOnce == false) {
+          lcd.clear();
+          clearedOnce = true;
+          lcd.setCursor(1,0);
+          lcd.print("Space Invaders");
+          lcd.setCursor(0,1);
         }
-        joyMovedOy = true;
-      }
       
-      if(yValue >= maxThreshold and joyMovedOy == false) {
-        countOy = countOy + 1;
-        joyMovedOy = true;
-      }
+        display_menu(option);
 
-      if(yValue > minThreshold and yValue < maxThreshold) {
-        joyMovedOy = false;
-      }
+        yValue = analogRead(pinY);
 
-      if(joyMovedOy == true) {
-        startingLevelValue = countOy;
-        display_settings();
-      }
-      
-      switchValue = digitalRead(pinSW);
-      if(switchValue == LOW) {
-        buttonPressed = true;
-        switchValue = HIGH;
-      }
+        if(yValue < minThreshold) {
+          if(joyMovedOy == false) {
+            option -= 1;
+            joyMovedOy = true;
+          }
+          if(option < 1) {
+            option = 1;
+          }
+        }else {
+          if(yValue > maxThreshold) {
+            if(joyMovedOy == false) {
+              option += 1;
+              joyMovedOy = true;
+            }
+            if(option > 4) {
+              option = 4;
+            }
+          }else {
+            joyMovedOy = false;
+          }
+        }
 
-      if(buttonPressed == true and buttonPressedII == false) {
-        print_name();
-        buttonPressedII = true;
-      }
+        if(joyMovedOy == true) {
+          lcd.clear();
+        }
 
-      if(buttonPressed == true and buttonPressedII == true and switchPressedEXITGame == false) {
-        switchValue = digitalRead(pinSW);
+        int switchValue = digitalRead(pinSW);
         if(switchValue == LOW) {
-          switchPressedEXITGame = true;
-          switchValue = HIGH;
+          mainMenu = false;
+          lcd.clear();
+          joyMovedOx = false;
+          joyMovedOy = false;
         }
+      }else{
+        //switch to choose: Play, Settings, Highscore or Info
+        option_choosed(option);
       }
     }
   }
-
-  if(gameMode == 1) {
-    if(clearedOnce == false) {
-      lcd.clear();
-      clearedOnce = true;
-      level = startingLevelValue;
-      previousMillis = millis();
-    }
-    display_game();
-    if(passed == false and finished == false) {
-      if(millis() - previousMillis >= interval) {
-        level += 1;
-        passed = true;
-      }
-    }
-    
-    if(passed == true) {
-      if(millis() - previousMillis >= 2 * interval) {
-          display_settings();
-          finished = true;
-          gameMode = 4;
-      }
-    }
-
-  }
-
-  if(gameMode == 4) {
-    if(score > Highscore) {
-      Highscore = score;
-      EEPROM.write(addr, Highscore);
-      addr++;
-      if(addr == EEPROM.length()) {
-        addr = 0;
-      }
-    }
-    previousMillis = 0;
-    game_finished();
-  }
-
-  if(gameMode == 3) {
-    display_highscore();
-  }
-    
 }
