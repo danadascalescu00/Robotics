@@ -2,50 +2,66 @@
 #include <EEPROM.h>
 #include <LiquidCrystal.h>
 
-const int redPin = A2;
+uint8_t ch = 0;
+uint16_t currMsgBit = 0;
+
+const char startMsg[] = "Press the red button to get started";
+
+const int redPin   = A2;
 const int greenPin = A3;
-const int bluePin = A5;
+const int bluePin  = A5;
 
 const int pinSW = 9; // digtal pin connected to switch output
-const int pinX = A0; // A0 - analog pin connected to X output
-const int pinY = A1; // A1 - analog pin connceted to Y output
+const int pinX  = A0; // A0 - analog pin connected to X output
+const int pinY  = A1; // A1 - analog pin connceted to Y output
 
 const int buzzerPin = 6;
 
 const int pinPushButton = 8;
 
 //declare all the LCD pins
-const int RS = 13;
-const int enable = 7;
-const int D4 = 5;
-const int D5 = 4;
-const int D6 = 3;
-const int D7 = 2;
+const int RS     = 12;
+const int enable = 11;
+const int D4     = 5;
+const int D5     = 4; 
+const int D6     = 3;
+const int D7     = 2;
 
 LiquidCrystal lcd(RS, enable, D4, D5, D6, D7);
 
-unsigned int redValue = 0;
-unsigned int blueValue = 0;
+unsigned int redValue   = 0;
+unsigned int blueValue  = 0;
 unsigned int greenValue = 0;
 
 unsigned long previousMillisBlinking = 0;
 unsigned long lastLevelMillis = 0;
+unsigned long lastPhaseDuration = 0;
+unsigned long lastShown = 0;
+unsigned long lastDebounceTime = 0; // the last time the output pin was toggled
+unsigned long debounceDelay = 50; // the debounce time; increase if the output flickers
 
 const long interval = 250;
 const long passingLevelInterval = 2500;
+const long phaseInterval = 2000;
 
 int switchValue, xValue, yValue;
 int switchState = LOW;
 
 boolean joyMovedOx = false;
 boolean joyMovedOy = false;
-boolean firstTime = true;
+boolean firstTime = false;
+boolean phaseI = false;
+boolean introductionDisplayed = false;
+boolean cleared = false;
+boolean clearedOnce = false;
 
 int minThreshold = 400;
 int maxThreshold = 600;
 
-int reading;
-int buttonState = HIGH;
+int buttonState;  // the current reading from the input pin
+int lastButtonState = LOW; // the previous reading from the input pin
+
+unsigned int startingLevel = 1;
 
 // "We wish you a Merry Christmas"
 int wish_melody[] = {
@@ -91,13 +107,13 @@ void newLevel() {
   levelPassed();
   unsigned long newLevelMillis = millis();
   if(newLevelMillis - lastLevelMillis >= passingLevelInterval) {
-    if(firstTime == true) {
+    if(firstTime == false) {
       lastLevelMillis = newLevelMillis;
-      firstTime = false;
-    }else {
-      switchState = LOW;
-      lastLevelMillis = 0;
       firstTime = true;
+    }else {
+      switchState = HIGH;
+      lastLevelMillis = 0;
+      firstTime = false;
       SetColors(0,0,0);
     }
   }
@@ -131,6 +147,54 @@ void buzz(int targetPin, long frequency, long length) {
   }
 }
 
+void display_introduction() {
+  unsigned long phaseDuration = millis();
+  if(phaseDuration - lastPhaseDuration >= phaseInterval) {
+    if(firstTime == false) {
+      firstTime = true;
+      lastPhaseDuration = phaseDuration;
+      lcd.setCursor(1,0);
+      lcd.print("Space Invaders");
+      lcd.setCursor(1,1);
+      lcd.print("The Retro Game");
+    }else {
+      if(phaseI == false) {
+        phaseI = true;
+        lastPhaseDuration = phaseDuration;
+      }else {
+        lcd.clear();
+        lcd.setCursor(4,0);
+        lcd.print("Christmas ");
+        lcd.setCursor(5,1);
+        lcd.print("Edition");
+        introductionDisplayed = true;
+        sing();
+        firstTime = false;
+      }
+    }
+  }
+}
+
+void lcd_printMsg(char *str) {
+  uint8_t ch = 0;
+  while(ch < 16 && str[ch] != '\0') {
+    lcd.print((char)str[ch++]);
+  }
+  while(ch++ < 16) {
+    lcd.print(" ");
+  }
+}
+
+void display_settings() {
+  lcd.setCursor(0,0);
+  lcd.print("Level: ");
+  lcd.setCursor(7,0);
+  lcd.print(startingLevel);
+  lcd.setCursor(0,1);
+  lcd.print("Player: ");
+  lcd.setCursor(7,1);
+}
+
 void setup() {
   pinMode(redPin, OUTPUT);
   pinMode(greenPin, OUTPUT);
@@ -138,10 +202,56 @@ void setup() {
   pinMode(pinSW, INPUT_PULLUP); //activate pull-up resistor on the pushbutton pin of joystick  
   pinMode(buzzerPin, OUTPUT);
   pinMode(pinPushButton, INPUT_PULLUP);
+  
   lcd.begin(16, 2);
-  lcd.print("Welcome!");
 }
 
 void loop() {
-  
+  if(introductionDisplayed == false) {
+    display_introduction();
+  }
+  else {
+    int reading = digitalRead(pinPushButton);
+
+    //check to see if the push-button was pressed, and we've waited long enough 
+    //since the last press to ignore any noise:
+    if(reading != lastButtonState) {
+      lastDebounceTime = millis();
+    }
+    if(millis() - lastDebounceTime > debounceDelay) {
+      //if the button state has changed:
+      if(reading != buttonState) {
+        buttonState = reading;
+      }
+
+      //save the reading:
+      lastButtonState = reading;
+    }
+    if(buttonState == LOW) {
+      if(cleared == false){
+        lcd.clear();
+        cleared = true;
+      }
+      lcd.setCursor(1,0);
+      lcd.print("Space Invaders");
+      lcd.setCursor(0,1);
+      
+      if(millis() > lastShown + 500) {
+        lastShown = millis();
+        if(startMsg[currMsgBit] == '\0') {
+          currMsgBit = 0;        
+        }else {
+          lcd_printMsg(startMsg + currMsgBit);
+          currMsgBit++;
+        }
+      }
+    }else {
+      if(clearedOnce == false) {
+        lcd.clear();
+        clearedOnce = true;
+      }
+      lcd.setCursor(1,0);
+      lcd.print("Space Invaders");
+    }
+  }
 }
