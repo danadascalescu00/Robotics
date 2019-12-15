@@ -8,7 +8,9 @@
 uint8_t ch = 0;
 uint16_t currMsgBit = 0;
 
-const char startMsg[] = "Press the red button to get started";
+const char startMsg[]   = "Press the red button to get started";
+const char endMsg[]     = "Press the red button to exit";
+const char githubLink[] = "https://github.com/danadascalescu00/Robotics/tree/master/Matrix%20Game";
 
 const int redPin   = A2;
 const int greenPin = A3;
@@ -47,7 +49,7 @@ const long interval = 250;
 const long passingLevelInterval = 2500;
 const long phaseInterval = 2000;
 
-int switchValue, xValue, yValue;
+int xValue, yValue;
 int switchState = LOW;
 
 boolean joyMovedOx = false;
@@ -58,6 +60,8 @@ boolean introductionDisplayed = false;
 boolean cleared = false;
 boolean clearedOnce = false;
 boolean mainMenu = false;
+boolean pressToStart = false;
+boolean pressedToExit = false;
 
 int minThreshold = 400;
 int maxThreshold = 600;
@@ -67,6 +71,7 @@ int lastButtonState = HIGH; // the previous reading from the input pin
 
 unsigned int startingLevel = 1;
 unsigned int option = 1;
+unsigned int displacement = 1; // for displaying informations
 
 byte downArrow[] = {
   B00100,
@@ -203,6 +208,7 @@ void display_introduction() {
 }
 
 void display_menu(unsigned int option) {
+  // set the cursor:
   switch(option){
     case 1: {
       lcd.setCursor(1,0);
@@ -262,6 +268,24 @@ void lcd_printMsg(char *str) {
   }
 }
 
+void option_choosed(unsigned int option) {
+  switch(option) {
+    case 1:{
+      break;
+    }
+    case 2: {
+      break;
+    }
+    case 3: {
+      break;
+    }
+    case 4: {
+      display_info();
+      break;
+    }
+  }
+}
+
 void display_settings() {
   lcd.setCursor(0,0);
   lcd.print("Level: ");
@@ -270,6 +294,119 @@ void display_settings() {
   lcd.setCursor(0,1);
   lcd.print("Player: ");
   lcd.setCursor(7,1);
+}
+
+void display_info() {
+  yValue = analogRead(pinY);
+  if(yValue < minThreshold) {
+    if(joyMovedOy == false) {
+      displacement -= 1;
+      joyMovedOy = true;
+    }
+    if(displacement < 1) {
+      displacement = 1;
+    }
+  }else {
+    if(yValue > maxThreshold) {
+      if(joyMovedOy == false) {
+        displacement += 1;
+        joyMovedOy = true;
+      }
+      if(displacement > 4) {
+        displacement = 4;
+      }
+    }else{
+      joyMovedOy = false;
+    }
+  }
+
+  if(joyMovedOy == true) {
+    lcd.clear();
+  }
+
+  switch(displacement) {
+    case 1: {
+      lcd.setCursor(1,0);
+      lcd.print("Space Invaders");
+      lcd.setCursor(0,1);
+      lcd.print("@UnibucRobotics");
+
+      // scroll arrow:
+      lcd.setCursor(15,0);
+      lcd.write(REVERSE_ARROW);
+      break;
+    }
+    case 2: {
+      lcd.setCursor(1,0);
+      lcd.print("GitHub Link:");
+      lcd.setCursor(0,1);
+
+      if(millis() > lastShown + 700) {
+        lastShown = millis();
+        if(githubLink[currMsgBit] == '\0') {
+          currMsgBit = 0;        
+        }else {
+          lcd_printMsg(githubLink + currMsgBit);
+          currMsgBit++;
+        }
+      }
+
+      // scroll arrow:
+      lcd.setCursor(15,0);
+      lcd.write(REVERSE_ARROW);
+      
+      break;
+    }
+    case 3: {
+      lcd.setCursor(1,0);
+      lcd.print("Creater:");
+      lcd.setCursor(0,1);
+      lcd.print("Dana Dascalescu");
+      
+      // scroll arrow:
+      lcd.setCursor(15,0);
+      lcd.write(REVERSE_ARROW);
+      
+      break;
+    }
+    case 4: {
+      lcd.setCursor(0,0);
+      if(millis() > lastShown + 500) {
+        lastShown = millis();
+        if(endMsg[currMsgBit] == '\0') {
+          currMsgBit = 0;        
+        }else {
+          lcd_printMsg(endMsg + currMsgBit);
+          currMsgBit++;
+        }
+      }
+
+      // scroll arrow:
+      lcd.setCursor(15,1);
+      lcd.write(ARROW);
+
+      int reading = digitalRead(pushButton);
+      // check to see if the button was pressed, and we have waited long enough since
+      // the last press to ignore any noise:
+      if(reading != lastButtonState) {
+        // reset the debouncing timer
+        lastDebounceTime = millis();
+      }
+      if((millis() - lastDebounceTime) > debounceDelay) {
+        if(reading != buttonState) {
+          buttonState = reading;
+        }
+      }
+      // save the reading:
+      lastButtonState = reading;
+      if(buttonState == LOW) {
+          mainMenu = true;
+          pressToStart = true;
+          firstTime = false;
+      }
+      break;
+    }
+  }
 }
 
 void setup() {
@@ -297,22 +434,19 @@ void loop() {
     int reading = digitalRead(pushButton);
     // check to see if the button was pressed, and we have waited long enough since
     // the last press to ignore any noise:
-    
     if(reading != lastButtonState) {
       // reset the debouncing timer
       lastDebounceTime = millis();
     }
-
     if((millis() - lastDebounceTime) > debounceDelay) {
       if(reading != buttonState) {
         buttonState = reading;
       }
     }
-    
     // save the reading:
     lastButtonState = reading;
  
-    if(mainMenu == false) {
+    if(mainMenu == false && pressToStart == false) {
       if(cleared == false){
         lcd.clear();
         cleared = true;
@@ -333,46 +467,60 @@ void loop() {
 
       if(buttonState == LOW) {
         mainMenu = true;
+        pressToStart = true;
         firstTime = false;
       }
     }else {
       // Main Menu:
-      if(clearedOnce == false) {
-        lcd.clear();
-        clearedOnce = true;
-        lcd.setCursor(1,0);
-        lcd.print("Space Invaders");
-        lcd.setCursor(0,1);
-      }
+      if(mainMenu == true) {
+        if(clearedOnce == false) {
+          lcd.clear();
+          clearedOnce = true;
+          lcd.setCursor(1,0);
+          lcd.print("Space Invaders");
+          lcd.setCursor(0,1);
+        }
       
-      display_menu(option);
+        display_menu(option);
 
-      yValue = analogRead(pinY);
+        yValue = analogRead(pinY);
 
-      if(yValue < minThreshold) {
-        if(joyMovedOy == false) {
-          option -= 1;
-          joyMovedOy = true;
-        }
-        if(option < 1) {
-          option = 1;
-        }
-      }else {
-        if(yValue > maxThreshold) {
+        if(yValue < minThreshold) {
           if(joyMovedOy == false) {
-            option += 1;
+            option -= 1;
             joyMovedOy = true;
           }
-          if(option > 4) {
-            option = 4;
+          if(option < 1) {
+            option = 1;
           }
         }else {
+          if(yValue > maxThreshold) {
+            if(joyMovedOy == false) {
+              option += 1;
+              joyMovedOy = true;
+            }
+            if(option > 4) {
+              option = 4;
+            }
+          }else {
+            joyMovedOy = false;
+          }
+        }
+
+        if(joyMovedOy == true) {
+          lcd.clear();
+        }
+
+        int switchValue = digitalRead(pinSW);
+        if(switchValue == LOW) {
+          mainMenu = false;
+          lcd.clear();
+          joyMovedOx = false;
           joyMovedOy = false;
         }
-      }
-
-      if(joyMovedOy == true) {
-        lcd.clear();
+      }else{
+        //switch to choose: Play, Settings, Highscore or Info
+        option_choosed(option);
       }
     }
   }
