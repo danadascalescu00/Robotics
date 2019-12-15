@@ -2,6 +2,9 @@
 #include <EEPROM.h>
 #include <LiquidCrystal.h>
 
+#define ARROW         byte(0)
+#define REVERSE_ARROW byte(1)
+
 uint8_t ch = 0;
 uint16_t currMsgBit = 0;
 
@@ -63,6 +66,29 @@ int buttonState = HIGH;  // the current reading from the input pin
 int lastButtonState = HIGH; // the previous reading from the input pin
 
 unsigned int startingLevel = 1;
+unsigned int option = 1;
+
+byte downArrow[] = {
+  B00100,
+  B00100,
+  B00100,
+  B00100,
+  B00100,
+  B10101,
+  B01110,
+  B00100
+};
+
+byte upArrow[] = {
+  B00100,
+  B01110,
+  B10101,
+  B00100,
+  B00100,
+  B00100,
+  B00100,
+  B00100
+};
 
 // "We wish you a Merry Christmas"
 int wish_melody[] = {
@@ -176,6 +202,56 @@ void display_introduction() {
   }
 }
 
+void display_menu(unsigned int option) {
+  switch(option){
+    case 1: {
+      lcd.setCursor(1,0);
+      lcd.print("Space Invaders");
+      lcd.setCursor(0,1);
+      lcd.print(">Play Settings");
+
+      // scroll arrow
+      lcd.setCursor(15,1);
+      lcd.write(REVERSE_ARROW);
+      break;
+    }
+    case 2: {
+      lcd.setCursor(1,0);
+      lcd.print("Space Invaders");
+      lcd.setCursor(0,1);
+      lcd.print("Play >Settings");
+
+      // scroll arrow
+      lcd.setCursor(15,1);
+      lcd.write(REVERSE_ARROW);
+      break;
+    }
+    case 3: {
+      lcd.setCursor(1,0);
+      lcd.print(">Highscore");
+      lcd.setCursor(0,1);
+      lcd.print("Info");
+
+      // scroll arrow
+      lcd.setCursor(15,1);
+      lcd.write(ARROW);
+      break;
+    }
+    case 4: {
+      lcd.setCursor(1,0);
+      lcd.print("Highscore");
+      lcd.setCursor(0,1);
+      lcd.print(">Info");
+
+      // scroll arrow
+      lcd.setCursor(15,1);
+      lcd.write(ARROW);
+      break;
+    }
+    
+  }
+}
+
 void lcd_printMsg(char *str) {
   uint8_t ch = 0;
   while(ch < 16 && str[ch] != '\0') {
@@ -205,6 +281,11 @@ void setup() {
   pinMode(pushButton, INPUT_PULLUP);
   
   lcd.begin(16, 2);
+  lcd.createChar(ARROW, upArrow);
+  lcd.home();
+  lcd.createChar(REVERSE_ARROW, downArrow);
+  lcd.home();
+  
   Serial.begin(9600);
 }
 
@@ -230,8 +311,7 @@ void loop() {
     
     // save the reading:
     lastButtonState = reading;
-
-    
+ 
     if(mainMenu == false) {
       if(cleared == false){
         lcd.clear();
@@ -265,7 +345,8 @@ void loop() {
         lcd.setCursor(0,1);
       }
       
-      // Ramane de adaugat cele patru optiuni: Play, Settings, HighScore, Info
+      display_menu(option);
+      
     }
   }
 }
