@@ -227,7 +227,7 @@ void display_menu(unsigned int option) {
       break;
     }
     case 3: {
-      lcd.setCursor(1,0);
+      lcd.setCursor(0,0);
       lcd.print(">Highscore");
       lcd.setCursor(0,1);
       lcd.print("Info");
@@ -238,7 +238,7 @@ void display_menu(unsigned int option) {
       break;
     }
     case 4: {
-      lcd.setCursor(1,0);
+      lcd.setCursor(0,0);
       lcd.print("Highscore");
       lcd.setCursor(0,1);
       lcd.print(">Info");
@@ -346,7 +346,34 @@ void loop() {
       }
       
       display_menu(option);
-      
+
+      yValue = analogRead(pinY);
+
+      if(yValue < minThreshold) {
+        if(joyMovedOy == false) {
+          option -= 1;
+          joyMovedOy = true;
+        }
+        if(option < 1) {
+          option = 1;
+        }
+      }else {
+        if(yValue > maxThreshold) {
+          if(joyMovedOy == false) {
+            option += 1;
+            joyMovedOy = true;
+          }
+          if(option > 4) {
+            option = 4;
+          }
+        }else {
+          joyMovedOy = false;
+        }
+      }
+
+      if(joyMovedOy == true) {
+        lcd.clear();
+      }
     }
   }
 }
