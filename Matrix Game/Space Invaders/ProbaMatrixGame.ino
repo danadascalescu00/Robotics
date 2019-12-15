@@ -17,7 +17,7 @@ const int pinY  = A1; // A1 - analog pin connceted to Y output
 
 const int buzzerPin = 6;
 
-const int pinPushButton = 8;
+const int pushButton = 8;
 
 //declare all the LCD pins
 const int RS     = 12;
@@ -54,12 +54,13 @@ boolean phaseI = false;
 boolean introductionDisplayed = false;
 boolean cleared = false;
 boolean clearedOnce = false;
+boolean mainMenu = false;
 
 int minThreshold = 400;
 int maxThreshold = 600;
 
-int buttonState;  // the current reading from the input pin
-int lastButtonState = LOW; // the previous reading from the input pin
+int buttonState = HIGH;  // the current reading from the input pin
+int lastButtonState = HIGH; // the previous reading from the input pin
 
 unsigned int startingLevel = 1;
 
@@ -201,9 +202,10 @@ void setup() {
   pinMode(bluePin, OUTPUT);
   pinMode(pinSW, INPUT_PULLUP); //activate pull-up resistor on the pushbutton pin of joystick  
   pinMode(buzzerPin, OUTPUT);
-  pinMode(pinPushButton, INPUT_PULLUP);
+  pinMode(pushButton, INPUT_PULLUP);
   
   lcd.begin(16, 2);
+  Serial.begin(9600);
 }
 
 void loop() {
@@ -211,23 +213,26 @@ void loop() {
     display_introduction();
   }
   else {
-    int reading = digitalRead(pinPushButton);
-
-    //check to see if the push-button was pressed, and we've waited long enough 
-    //since the last press to ignore any noise:
+    int reading = digitalRead(pushButton);
+    // check to see if the button was pressed, and we have waited long enough since
+    // the last press to ignore any noise:
+    
     if(reading != lastButtonState) {
+      // reset the debouncing timer
       lastDebounceTime = millis();
     }
-    if(millis() - lastDebounceTime > debounceDelay) {
-      //if the button state has changed:
+
+    if((millis() - lastDebounceTime) > debounceDelay) {
       if(reading != buttonState) {
         buttonState = reading;
       }
-
-      //save the reading:
-      lastButtonState = reading;
     }
-    if(buttonState == LOW) {
+    
+    // save the reading:
+    lastButtonState = reading;
+
+    
+    if(mainMenu == false) {
       if(cleared == false){
         lcd.clear();
         cleared = true;
@@ -245,13 +250,22 @@ void loop() {
           currMsgBit++;
         }
       }
+
+      if(buttonState == LOW) {
+        mainMenu = true;
+        firstTime = false;
+      }
     }else {
+      // Main Menu:
       if(clearedOnce == false) {
         lcd.clear();
         clearedOnce = true;
+        lcd.setCursor(1,0);
+        lcd.print("Space Invaders");
+        lcd.setCursor(0,1);
       }
-      lcd.setCursor(1,0);
-      lcd.print("Space Invaders");
+      
+      // Ramane de adaugat cele patru optiuni: Play, Settings, HighScore, Info
     }
   }
 }
