@@ -12,7 +12,7 @@ const char startMsg[]   = "Press the red button to get started";
 const char endMsg[]     = "Press the red button to exit";
 const char githubLink[] = "https://github.com/danadascalescu00/Robotics/tree/master/Matrix%20Game";
 
-String Name = "Unknown";
+char Name[] = "       ";
 
 const int redPin   = A2;
 const int greenPin = A3;
@@ -66,9 +66,10 @@ boolean pressToStart = false;
 boolean pressedToExit = false;
 boolean setState = false;
 boolean buttonPressed = true;
+boolean switchToLetter = false;
 
-int minThreshold = 400;
-int maxThreshold = 600;
+int minThreshold = 350;
+int maxThreshold = 750;
 
 int buttonState = HIGH;  // the current reading from the input pin
 int lastButtonState = HIGH; // the previous reading from the input pin
@@ -79,6 +80,7 @@ unsigned int option = 1;
 unsigned int displacement = 1;
 unsigned int score = 0;
 unsigned int Highscore = 0;
+
 int letter = 0;
 int pos = 0;
 // the current address in the EEPROM 
@@ -362,7 +364,7 @@ void display_settings() {
       lcd.setCursor(0,1);
       lcd.print(" Player: ");
       lcd.setCursor(9,1);
-      lcd.print("_______");
+      lcd.print(Name);
 
       // scroll arrow:
       lcd.setCursor(15,0);
@@ -417,14 +419,92 @@ void display_settings() {
     lcd.setCursor(0,1);
     lcd.print(">Player: ");
     lcd.setCursor(9,1);
-    lcd.print("_______");
-
+    if(firstTime == false) {
+      lcd.print("_______");
+      firstTime = true;
+    }else{
+      lcd.print(Name);
+    }
     // scroll arrow:
     lcd.setCursor(15,0);
     lcd.write(REVERSE_ARROW);
+    
+      // Set player's name:
+      buttonPressed = false;
+      
+      int switchVal = digitalRead(pinSW);
+      if(switchVal == LOW and switchToLetter == true) {
+        buttonPressed = true;
+        displacement = 3;
+      }else{
+        if(switchVal == true) {
+          switchToLetter = true;
+        }
+      }
+      
+      xValue = analogRead(pinX);
+      if(xValue < minThreshold) {
+        if(joyMovedOx == false) {
+          pos -= 1;
+          joyMovedOx = true;
+        }
+        if(pos < 0) {
+          pos = 0;
+        }
+      }else{
+        if(xValue > maxThreshold) {
+          if(joyMovedOx == false) {
+            pos += 1;
+            joyMovedOx = true; 
+          }
+          if(pos > 7) {
+            pos = 7;
+          }
+        }else{
+          joyMovedOx = false;
+        }
+       }
+       
+        yValue = analogRead(pinY);
+        if(yValue < minThreshold) {
+          if(joyMovedOy == false) {
+            letter -= 1;
+            joyMovedOy = true;
+          }
+          if(letter < 0) {
+            letter = 0;
+          }
+        }else{
+          if(yValue > maxThreshold) {
+            if(joyMovedOy == false) {
+              letter += 1;
+              joyMovedOy = true; 
+            }
+            if(letter > 26) {
+              letter = 26;
+            }
+          }else{
+            joyMovedOy = false;
+          }
+        }
+        if(switchToLetter == true) {
+          char let = 'A' + letter;
+          lcd.print(let);
+          Name[pos] = let;
+        }
+      
+
+      if(joyMovedOx == true) {
+        letter = 0;
+        lcd.setCursor(9+pos,1);
+        lcd.print("_");
+      }
+
     break;
    }
    case 3: {
+      lcd.setCursor(0,1);
+      lcd.print("               ");
       lcd.setCursor(0,0);
       if(millis() > lastShown + 500) {
         lastShown = millis();
@@ -482,8 +562,8 @@ void display_highscore() {
       lcd.setCursor(13,0);
       lcd.setCursor(0,1);
       lcd.print(Name);
-      unsigned int pos = Name.length();
-      lcd.setCursor(pos+2,1);
+      unsigned int p = 7;
+      lcd.setCursor(p+2,1);
       lcd.print(Highscore);
 
       // scroll arrow:
