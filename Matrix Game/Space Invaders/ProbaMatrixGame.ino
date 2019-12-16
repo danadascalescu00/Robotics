@@ -64,6 +64,8 @@ boolean clearedOnce = false;
 boolean mainMenu = false;
 boolean pressToStart = false;
 boolean pressedToExit = false;
+boolean setState = false;
+boolean buttonPressed = true;
 
 int minThreshold = 400;
 int maxThreshold = 600;
@@ -77,7 +79,8 @@ unsigned int option = 1;
 unsigned int displacement = 1;
 unsigned int score = 0;
 unsigned int Highscore = 0;
-
+int letter = 0;
+int pos = 0;
 // the current address in the EEPROM 
 int addr = 0;
 
@@ -185,6 +188,31 @@ void buzz(int targetPin, long frequency, long length) {
     digitalWrite(targetPin, LOW); 
     delayMicroseconds(delayValue);
   }
+}
+
+void red_button_pressed() {
+  int reading = digitalRead(pushButton);
+      // check to see if the button was pressed, and we have waited long enough since
+      // the last press to ignore any noise:
+      if(reading != lastButtonState) {
+        // reset the debouncing timer
+        lastDebounceTime = millis();
+      }
+      if((millis() - lastDebounceTime) > debounceDelay) {
+        if(reading != buttonState) {
+          buttonState = reading;
+        }
+      }
+      // save the reading:
+      lastButtonState = reading;
+      if(buttonState == LOW) {
+        lcd.clear();
+        mainMenu = true;
+        pressToStart = true;
+        firstTime = false;
+        displacement = 1;
+        currMsgBit = 0;
+      }
 }
 
 void display_introduction() {
@@ -297,50 +325,107 @@ void option_choosed(unsigned int option) {
 }
 
 void display_settings() {
-  yValue = analogRead(pinY);
-  if(yValue < minThreshold) {
-    if(joyMovedOy == false) {
-      displacement -= 1;
-      joyMovedOy = true;
-    }
-    if(displacement < 1) {
-      displacement = 1;
-    }
-  }else {
-    if(yValue > maxThreshold) {
+  if(buttonPressed == true) {
+    yValue = analogRead(pinY);
+    if(yValue < minThreshold) {
       if(joyMovedOy == false) {
-        displacement += 1;
+        displacement -= 1;
         joyMovedOy = true;
       }
-      if(displacement > 2) {
-        displacement = 2;
+      if(displacement < 1) {
+        displacement = 1;
       }
-    }else{
-      joyMovedOy = false;
+    }else {
+      if(yValue > maxThreshold) {
+        if(joyMovedOy == false) {
+          displacement += 1;
+          joyMovedOy = true;
+        }
+        if(displacement > 3) {
+          displacement = 3;
+        }
+      }else{
+        joyMovedOy = false;
+      }
     }
-  }
 
-  if(joyMovedOy == true) {
-    lcd.clear();
+    if(joyMovedOy == true) {
+      lcd.clear();
+    }
   }
 
   switch(displacement) {
     case 1: {
       lcd.setCursor(0,0);
-      lcd.print("Start level: ");
+      lcd.print(">Start level: ");
       lcd.setCursor(13,0);
       lcd.print(startingLevel);
       lcd.setCursor(0,1);
-      lcd.print("Player: ");
-      lcd.setCursor(8,1);
-      lcd.print(Name);
+      lcd.print(" Player: ");
+      lcd.setCursor(9,1);
+      lcd.print("_______");
 
       // scroll arrow:
       lcd.setCursor(15,0);
       lcd.write(REVERSE_ARROW);
-      break;
-    }
-    case 2: {
+
+      int switchValue = digitalRead(pinSW);
+      if(switchValue == LOW) {
+        setState = !setState;
+      }
+
+      if(setState == true) {
+        // Set the starting level:
+        buttonPressed = false;
+        xValue = analogRead(pinX);
+        if(xValue < minThreshold) {
+          if(joyMovedOx == false) {
+            startingLevel -= 1;
+            joyMovedOx = true;
+          }
+          if(startingLevel < 1) {
+            startingLevel = 1;
+          }
+        }else {
+          if(xValue > maxThreshold) {
+            if(joyMovedOx == false) {
+              startingLevel += 1;
+              joyMovedOx = true;
+            }
+            if(startingLevel > 5) {
+              startingLevel = 5;
+            }
+          }else{
+            joyMovedOx = false;
+          }
+        }
+        
+        lcd.setCursor(13,0);
+        lcd.print(startingLevel);
+  
+        int switchValue = digitalRead(pinSW);
+        if(switchValue == LOW) {
+          buttonPressed = true;
+        }
+      }
+    break;
+   }
+   case 2: {
+    lcd.setCursor(0,0);
+    lcd.print("Start level: ");
+    lcd.setCursor(13,0);
+    lcd.print(startingLevel);
+    lcd.setCursor(0,1);
+    lcd.print(">Player: ");
+    lcd.setCursor(9,1);
+    lcd.print("_______");
+
+    // scroll arrow:
+    lcd.setCursor(15,0);
+    lcd.write(REVERSE_ARROW);
+    break;
+   }
+   case 3: {
       lcd.setCursor(0,0);
       if(millis() > lastShown + 500) {
         lastShown = millis();
@@ -356,31 +441,11 @@ void display_settings() {
       lcd.setCursor(15,1);
       lcd.write(ARROW);
       
-      int reading = digitalRead(pushButton);
-      // check to see if the button was pressed, and we have waited long enough since
-      // the last press to ignore any noise:
-      if(reading != lastButtonState) {
-        // reset the debouncing timer
-        lastDebounceTime = millis();
-      }
-      if((millis() - lastDebounceTime) > debounceDelay) {
-        if(reading != buttonState) {
-          buttonState = reading;
-        }
-      }
-      // save the reading:
-      lastButtonState = reading;
-      if(buttonState == LOW) {
-        lcd.clear();
-        mainMenu = true;
-        pressToStart = true;
-        firstTime = false;
-        displacement = 1;
-        currMsgBit = 0;
-     }
-     break;
-    }
-  }  
+      red_button_pressed();
+      
+      break;
+    }  
+  }
 }
 
 void display_highscore() {
@@ -443,29 +508,9 @@ void display_highscore() {
       lcd.setCursor(15,1);
       lcd.write(ARROW);
       
-      int reading = digitalRead(pushButton);
-      // check to see if the button was pressed, and we have waited long enough since
-      // the last press to ignore any noise:
-      if(reading != lastButtonState) {
-        // reset the debouncing timer
-        lastDebounceTime = millis();
-      }
-      if((millis() - lastDebounceTime) > debounceDelay) {
-        if(reading != buttonState) {
-          buttonState = reading;
-        }
-      }
-      // save the reading:
-      lastButtonState = reading;
-      if(buttonState == LOW) {
-        lcd.clear();
-        mainMenu = true;
-        pressToStart = true;
-        firstTime = false;
-        displacement = 1;
-        currMsgBit = 0;
-     }
-     break;
+      red_button_pressed();
+      
+      break;
     }
   }
 }
@@ -563,28 +608,8 @@ void display_info() {
       lcd.setCursor(15,1);
       lcd.write(ARROW);
 
-      int reading = digitalRead(pushButton);
-      // check to see if the button was pressed, and we have waited long enough since
-      // the last press to ignore any noise:
-      if(reading != lastButtonState) {
-        // reset the debouncing timer
-        lastDebounceTime = millis();
-      }
-      if((millis() - lastDebounceTime) > debounceDelay) {
-        if(reading != buttonState) {
-          buttonState = reading;
-        }
-      }
-      // save the reading:
-      lastButtonState = reading;
-      if(buttonState == LOW) {
-        lcd.clear();
-        mainMenu = true;
-        pressToStart = true;
-        firstTime = false;
-        displacement = 1;
-        currMsgBit = 0;
-      }
+      red_button_pressed();
+      
       break;
     }
   }
