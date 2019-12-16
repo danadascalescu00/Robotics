@@ -192,27 +192,27 @@ void buzz(int targetPin, long frequency, long length) {
 
 void red_button_pressed() {
   int reading = digitalRead(pushButton);
-      // check to see if the button was pressed, and we have waited long enough since
-      // the last press to ignore any noise:
-      if(reading != lastButtonState) {
-        // reset the debouncing timer
-        lastDebounceTime = millis();
-      }
-      if((millis() - lastDebounceTime) > debounceDelay) {
-        if(reading != buttonState) {
-          buttonState = reading;
-        }
-      }
-      // save the reading:
-      lastButtonState = reading;
-      if(buttonState == LOW) {
-        lcd.clear();
-        mainMenu = true;
-        pressToStart = true;
-        firstTime = false;
-        displacement = 1;
-        currMsgBit = 0;
-      }
+  // check to see if the button was pressed, and we have waited long enough since
+  // the last press to ignore any noise:
+  if(reading != lastButtonState) {
+    // reset the debouncing timer
+    lastDebounceTime = millis();
+  }
+  if((millis() - lastDebounceTime) > debounceDelay) {
+    if(reading != buttonState) {
+      buttonState = reading;
+    }
+  }
+  // save the reading:
+  lastButtonState = reading;
+  if(buttonState == LOW) {
+    lcd.clear();
+    mainMenu = true;
+    pressToStart = true;
+    firstTime = false;
+    displacement = 1;
+    currMsgBit = 0;
+  }
 }
 
 void display_introduction() {
@@ -290,7 +290,6 @@ void display_menu(unsigned int option) {
       lcd.write(ARROW);
       break;
     }
-    
   }
 }
 
