@@ -66,7 +66,8 @@ boolean pressToStart = false;
 boolean pressedToExit = false;
 boolean setState = false;
 boolean buttonPressed = true;
-boolean switchToLetter = false;
+boolean switchToLetter = true;
+
 
 int minThreshold = 350;
 int maxThreshold = 750;
@@ -428,18 +429,27 @@ void display_settings() {
     // scroll arrow:
     lcd.setCursor(15,0);
     lcd.write(REVERSE_ARROW);
+
+    int switchValue = digitalRead(pinSW);
+    if(switchValue == LOW) {
+      setState = !setState;
+      Serial.println("here");
+    }
     
+    if(setState == true) {
       // Set player's name:
       buttonPressed = false;
       
       int switchVal = digitalRead(pinSW);
-      if(switchVal == LOW and switchToLetter == true) {
+      if(switchVal == LOW and buttonPressed == true) {
         buttonPressed = true;
-        displacement = 3;
+        setState = false;
       }else{
-        if(switchVal == true) {
+        if(switchVal == LOW and buttonPressed == false) {
           switchToLetter = true;
-        }
+          buttonPressed = true;
+          setState = true;
+          }
       }
       
       xValue = analogRead(pinX);
@@ -464,7 +474,8 @@ void display_settings() {
           joyMovedOx = false;
         }
        }
-       
+
+      
         yValue = analogRead(pinY);
         if(yValue < minThreshold) {
           if(joyMovedOy == false) {
@@ -487,18 +498,20 @@ void display_settings() {
             joyMovedOy = false;
           }
         }
-        if(switchToLetter == true) {
+        if(joyMovedOy == true) {
           char let = 'A' + letter;
           lcd.print(let);
           Name[pos] = let;
+          //switchToLetter = false;
         }
       
 
-      if(joyMovedOx == true) {
-        letter = 0;
+      if(switchToLetter == true) {
+        //letter = 0;
         lcd.setCursor(9+pos,1);
-        lcd.print("_");
-      }
+        //lcd.print("_");
+      }  
+    }
 
     break;
    }
