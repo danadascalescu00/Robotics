@@ -12,7 +12,7 @@ const char startMsg[]   = "Press the red button to get started";
 const char endMsg[]     = "Press the red button to exit";
 const char githubLink[] = "https://github.com/danadascalescu00/Robotics/tree/master/Matrix%20Game";
 
-char Name[] = "       ";
+char Name[8];
 
 const int redPin   = A2;
 const int greenPin = A3;
@@ -67,6 +67,7 @@ boolean pressedToExit = false;
 boolean setState = false;
 boolean buttonPressed = true;
 boolean switchToLetter = true;
+boolean highScoreFirstLine = false;
 
 
 int minThreshold = 350;
@@ -84,8 +85,9 @@ unsigned int Highscore = 0;
 
 int letter = 0;
 int pos = 0;
-// the current address in the EEPROM 
-int addr = 0;
+
+// the currents address in the EEPROM for saving top three players highscore 
+const int highscoreAddrI = 0, highscoreAddrII = 32, highscoreAddrIII = 64;
 
 byte downArrow[] = {
   B00100,
@@ -132,6 +134,11 @@ int wish_tempo[] = {
   4, 4, 8, 8,
   4, 4, 4,
   2
+};
+
+struct highscore {
+  unsigned int scoreH = 0;
+  char playerName[8] = "Unknown";
 };
 
 void levelPassed() {
@@ -316,6 +323,7 @@ void option_choosed(unsigned int option) {
       break;
     }
     case 3: {
+      firstTime = false;
       display_highscore();
       break;
     }
@@ -475,7 +483,6 @@ void display_settings() {
         }
        }
 
-      
         yValue = analogRead(pinY);
         if(yValue < minThreshold) {
           if(joyMovedOy == false) {
@@ -556,8 +563,8 @@ void display_highscore() {
         displacement += 1;
         joyMovedOy = true;
       }
-      if(displacement > 2) {
-        displacement = 2;
+      if(displacement > 3) {
+        displacement = 3;
       }
     }else{
       joyMovedOy = false;
@@ -570,38 +577,15 @@ void display_highscore() {
 
   switch(displacement) {
     case 1: {
-      lcd.setCursor(3,0);
-      lcd.print("HIGHSCORE");
-      lcd.setCursor(13,0);
-      lcd.setCursor(0,1);
-      lcd.print(Name);
-      unsigned int p = 7;
-      lcd.setCursor(p+2,1);
-      lcd.print(Highscore);
-
-      // scroll arrow:
-      lcd.setCursor(15,0);
-      lcd.write(REVERSE_ARROW);
+      viewTopPlayersList(displacement);
       break;
     }
     case 2: {
-      lcd.setCursor(0,0);
-      if(millis() > lastShown + 500) {
-        lastShown = millis();
-        if(endMsg[currMsgBit] == '\0') {
-          currMsgBit = 0;        
-        }else {
-          lcd_printMsg(endMsg + currMsgBit);
-          currMsgBit++;
-        }
-      }
-
-      // scroll arrow:
-      lcd.setCursor(15,1);
-      lcd.write(ARROW);
-      
-      red_button_pressed();
-      
+      viewTopPlayersList(displacement);
+      break;
+    }
+    case 3: {
+      viewTopPlayersList(displacement);
       break;
     }
   }
@@ -707,7 +691,97 @@ void display_info() {
   }
 }
 
+void updateTopPlayersList() {
+  highscore highI, highII, highIII;
+  EEPROM.get(highscoreAddrI, highI);
+  EEPROM.get(highscoreAddrII, highII);
+  EEPROM.get(highscoreAddrIII, highIII);
+
+  if(score > highI.scoreH) {
+    highscore newHigh;
+    strcpy(newHigh.playerName, Name);
+    newHigh.scoreH = score;
+
+    EEPROM.put(highscoreAddrIII, highII);
+    EEPROM.put(highscoreAddrII, highI);
+    EEPROM.put(highscoreAddrI, newHigh);
+  }
+}
+
+void viewTopPlayersList(int count) {
+  highscore highI, highII, highIII;
+  EEPROM.get(highscoreAddrI, highI);
+  EEPROM.get(highscoreAddrII, highII);
+  EEPROM.get(highscoreAddrIII, highIII);
+
+  switch(count) {
+    case 1: {
+      while(1) {
+        yValue = analogRead(pinY);
+        if(yValue > maxThreshold)
+          break;
+        
+        lcd.setCursor(3,0);
+        lcd.print("HIGHSCORE");
+        lcd.setCursor(0,1);
+        lcd.print("1.");
+        lcd.setCursor(3,1);
+        lcd.print(highI.playerName);
+        lcd.setCursor(12,1);
+        lcd.print(highI.scoreH);
+      }
+      break;
+    }
+    case 2: {
+      while(1) {
+        yValue = analogRead(pinY);
+        if(yValue > maxThreshold)
+          break;
+
+        lcd.setCursor(0,0);
+        lcd.print("2.");
+        lcd.setCursor(3,0);
+        lcd.print(highII.playerName);
+        lcd.setCursor(12,0);
+        lcd.print(highII.scoreH);
+
+        lcd.setCursor(0,1);
+        lcd.print("3.");
+        lcd.setCursor(3,1);
+        lcd.print(highIII.playerName);
+        lcd.setCursor(12,1);
+        lcd.print(highIII.scoreH);
+      }
+      break;
+    }
+    case 3: {
+      while(1) {
+        yValue = analogRead(pinY);
+        if(yValue > maxThreshold)
+          break;
+      
+        lcd.setCursor(0,0);
+        if(millis() > lastShown + 500) {
+          lastShown = millis();
+          if(endMsg[currMsgBit] == '\0') {
+            currMsgBit = 0;        
+          }else {
+            lcd_printMsg(endMsg + currMsgBit);
+            currMsgBit++;
+          }
+        }
+      
+        red_button_pressed();
+      }
+      break;
+    }
+  }
+}
+
 void setup() {
+  strcpy(Name, "Unknown");
+  Name[8] = '\0';
+   
   pinMode(redPin, OUTPUT);
   pinMode(greenPin, OUTPUT);
   pinMode(bluePin, OUTPUT);
@@ -721,11 +795,15 @@ void setup() {
   lcd.createChar(REVERSE_ARROW, downArrow);
   lcd.home();
   
-  Serial.begin(9600);
+  //Serial.begin(9600);
 }
 
 void loop() {
-  Highscore = EEPROM.read(addr);
+//  highscore highI;
+//  EEPROM.put(highscoreAddrI, highI);
+//  EEPROM.put(highscoreAddrII, highI);
+//  EEPROM.put(highscoreAddrIII, highI);
+  updateTopPlayersList(); // MOVE TO GAME MODE
   
   if(introductionDisplayed == false) {
     display_introduction();
