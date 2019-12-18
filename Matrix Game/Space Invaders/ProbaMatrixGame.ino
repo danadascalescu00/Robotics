@@ -1,9 +1,12 @@
 #include "pitches.h"
 #include <EEPROM.h>
 #include <LiquidCrystal.h>
+#include "LedControl.h"
 
-#define ARROW         byte(0)
-#define REVERSE_ARROW byte(1)
+#define ARROW            byte(0)
+#define REVERSE_ARROW    byte(1)
+#define NOTES            3
+#define MATRIX_DIMENSION 8
 
 uint8_t ch = 0;
 uint16_t currMsgBit = 0;
@@ -35,6 +38,7 @@ const int D6     = 3;
 const int D7     = 2;
 
 LiquidCrystal lcd(RS, enable, D4, D5, D6, D7);
+LedControl lc = LedControl(13, 7, 10, 1); //DIN, CLK, LOAD, No. DRIVER
 
 unsigned int redValue   = 0;
 unsigned int blueValue  = 0;
@@ -68,6 +72,7 @@ boolean setState = false;
 boolean buttonPressed = true;
 boolean switchToLetter = true;
 boolean highScoreFirstLine = false;
+boolean playerWon = false;
 
 
 int minThreshold = 350;
@@ -110,6 +115,12 @@ byte upArrow[] = {
   B00100,
   B00100
 };
+
+/* SOUNDS */
+int boom = NOTE_C4;
+boolean loseSound = true;
+int loseNoteDuration[] = {2, 4, 4};
+int loseNotes[] = {NOTE_F4, NOTE_A4, NOTE_C5};
 
 // "We wish you a Merry Christmas"
 int wish_melody[] = {
@@ -222,6 +233,8 @@ void red_button_pressed() {
     firstTime = false;
     displacement = 1;
     currMsgBit = 0;
+    playerWon = false;
+    loseSound = true;
   }
 }
 
@@ -285,8 +298,10 @@ void display_menu(unsigned int option) {
       lcd.print("Info");
 
       // scroll arrow
-      lcd.setCursor(15,1);
+      lcd.setCursor(14,0);
       lcd.write(ARROW);
+      lcd.setCursor(15,0);
+      lcd.write(REVERSE_ARROW);
       break;
     }
     case 4: {
@@ -316,6 +331,7 @@ void lcd_printMsg(char *str) {
 void option_choosed(unsigned int option) {
   switch(option) {
     case 1:{
+      game();
       break;
     }
     case 2: {
@@ -512,11 +528,8 @@ void display_settings() {
           //switchToLetter = false;
         }
       
-
       if(switchToLetter == true) {
-        //letter = 0;
         lcd.setCursor(9+pos,1);
-        //lcd.print("_");
       }  
     }
 
@@ -577,15 +590,33 @@ void display_highscore() {
 
   switch(displacement) {
     case 1: {
-      viewTopPlayersList(displacement);
+      viewTopPlayersList(1);
+      displacement = 3;
       break;
     }
     case 2: {
-      viewTopPlayersList(displacement);
+      viewTopPlayersList(2);
+      displacement = 3;
       break;
     }
     case 3: {
-      viewTopPlayersList(displacement);
+      lcd.setCursor(0,0);
+      if(millis() > lastShown + 500) {
+        lastShown = millis();
+        if(endMsg[currMsgBit] == '\0') {
+          currMsgBit = 0;
+        }else {
+          lcd_printMsg(endMsg + currMsgBit);
+          currMsgBit++;
+        }
+      }
+
+      // scroll arrow:
+      lcd.setCursor(0,1);
+      lcd.write(ARROW);
+      
+      red_button_pressed();
+            
       break;
     }
   }
@@ -751,31 +782,53 @@ void viewTopPlayersList(int count) {
         lcd.print(highIII.playerName);
         lcd.setCursor(12,1);
         lcd.print(highIII.scoreH);
-      }
-      break;
-    }
-    case 3: {
-      while(1) {
-        yValue = analogRead(pinY);
-        if(yValue > maxThreshold)
-          break;
-      
-        lcd.setCursor(0,0);
-        if(millis() > lastShown + 500) {
-          lastShown = millis();
-          if(endMsg[currMsgBit] == '\0') {
-            currMsgBit = 0;        
-          }else {
-            lcd_printMsg(endMsg + currMsgBit);
-            currMsgBit++;
-          }
-        }
-      
-        red_button_pressed();
+
+        // scroll arrow:
+        lcd.setCursor(15,0);
+        lcd.write(REVERSE_ARROW);
       }
       break;
     }
   }
+}
+
+//void game() {
+//  
+//}
+
+void game_over() {
+  if(playerWon == false) {
+    if(loseSound) {
+      lcd.setCursor(6,0);
+      lcd.print("YOU");
+      lcd.setCursor(5,1);
+      lcd.print("LOSED!");
+      loseSound = false;
+      for(int note = 0; note < NOTES; note++) {
+        int noteDuration = 500/ loseNoteDuration[note];
+        tone(buzzerPin, loseNotes[note], noteDuration);
+        int pauseBetweenNotes = noteDuration * 1.50;
+        delay(pauseBetweenNotes);
+        noTone(buzzerPin);
+      }
+    }
+  }
+  //exit game and return to main menu
+  lcd.setCursor(5,1);
+  lcd.print("      ");
+  lcd.setCursor(0,0);
+  if(millis() > lastShown + 500) {
+    lastShown = millis();
+    if(endMsg[currMsgBit] == '\0') {
+      currMsgBit = 0;        
+    }else {
+      lcd_printMsg(endMsg + currMsgBit);
+      currMsgBit++;
+     }
+  }
+      
+  red_button_pressed();
+  
 }
 
 void setup() {
@@ -794,15 +847,15 @@ void setup() {
   lcd.home();
   lcd.createChar(REVERSE_ARROW, downArrow);
   lcd.home();
-  
+
+  lc.shutdown(0, false); // turn off power saving, enables display
+  lc.setIntensity(0, 5); // sets brightness (0~15 possible values)
+  lc.clearDisplay(0);// clear screen
   //Serial.begin(9600);
 }
 
 void loop() {
-//  highscore highI;
-//  EEPROM.put(highscoreAddrI, highI);
-//  EEPROM.put(highscoreAddrII, highI);
-//  EEPROM.put(highscoreAddrIII, highI);
+
   updateTopPlayersList(); // MOVE TO GAME MODE
   
   if(introductionDisplayed == false) {
@@ -897,7 +950,7 @@ void loop() {
           joyMovedOy = false;
         }
       }else{
-        //switch to choose: Play, Settings, Highscore or Info
+        //MAIN MENU: switch to choose: Play, Settings, Highscore or Info
         option_choosed(option);
       }
     }
