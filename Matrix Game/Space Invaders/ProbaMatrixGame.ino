@@ -758,6 +758,22 @@ void updateTopPlayersList() {
     EEPROM.put(highscoreAddrIII, highII);
     EEPROM.put(highscoreAddrII, highI);
     EEPROM.put(highscoreAddrI, newHigh);
+  }else{
+    if(score > highII.scoreH) {
+      highscore newHigh;
+      strcpy(newHigh.playerName, Name);
+      newHigh.scoreH = score;
+      
+      EEPROM.put(highscoreAddrIII, highII);
+      EEPROM.put(highscoreAddrII, newHigh);
+    }else{
+      if(score > highIII.scoreH) {
+      highscore newHigh;
+      strcpy(newHigh.playerName, Name);
+      newHigh.scoreH = score;
+      
+      EEPROM.put(highscoreAddrIII, newHigh);      
+    }
   }
 }
 
@@ -841,6 +857,7 @@ void game() {
 }
 
 void game_over() {
+  updateTopPlayersList();
   if(playerWon == false) {
     if(loseSound) {
       lcd.setCursor(6,0);
