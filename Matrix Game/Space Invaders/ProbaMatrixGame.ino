@@ -12,9 +12,13 @@
 uint8_t ch = 0;
 uint16_t currMsgBit = 0;
 
-const char startMsg[]   = "Press the red button to get started";
-const char endMsg[]     = "Press the red button to exit";
-const char githubLink[] = "https://github.com/danadascalescu00/Robotics/tree/master/Matrix%20Game";
+const char startMsg[]    = " Press the red button to get started";
+const char endMsg[]      = " Press the red button to exit";
+const char githubLink[]  = " https://github.com/danadascalescu00/Robotics/tree/master/Matrix%20Game";
+const char storyMsgI[]   = " SPACE INVADERS The Retro Game: Special Christmas Edition"; 
+const char storyMsgII[]  = " Do you think you can conqueur the galaxy?";
+const char storyMsgIII[] = " Everything will get harder as you play!";
+const char storyMsgIV[]  = " Every level passed without loosing life will get you a special power";
 
 char Name[8];
 
@@ -75,6 +79,7 @@ boolean switchToLetter = true;
 boolean highScoreFirstLine = false;
 boolean playerWon = false;
 boolean gameOver = false;
+boolean storyDisplay = true;
 
 int minThreshold = 350;
 int maxThreshold = 750;
@@ -319,6 +324,8 @@ void display_menu(unsigned int option) {
       lcd.print("Play >Settings");
 
       // scroll arrow
+      lcd.setCursor(14,1);
+      lcd.write(ARROW);
       lcd.setCursor(15,1);
       lcd.write(REVERSE_ARROW);
       break;
@@ -390,6 +397,128 @@ void readPlayerEntries() {
   xValue = analogRead(pinX);
   switchState = !digitalRead(pinSW);
   buttonValue = digitalRead(pushButton);
+}
+
+void story() {
+  yValue = analogRead(pinY);
+  if(yValue < minThreshold) {
+    if(joyMovedOy == false) {
+      displacement -= 1;
+      joyMovedOy = true;
+    }
+    if(displacement < 1) {
+      displacement = 1;
+    }
+  }else {
+    if(yValue > maxThreshold) {
+      if(joyMovedOy == false) {
+        displacement += 1;
+        joyMovedOy = true;
+      }
+      if(displacement > 5) {
+        displacement = 5;
+      }
+    }else{
+      joyMovedOy = false;
+    }
+  }
+
+  if(joyMovedOy == true) {
+    lcd.clear();
+  }
+
+  switch(displacement) {
+    case 1: {
+      lcd.setCursor(0,0);
+      if(millis() > lastShown + 700) {
+        lastShown = millis();
+        if(storyMsgI[currMsgBit] == '\0') {
+          currMsgBit = 0;        
+        }else {
+          lcd_printMsg(storyMsgI + currMsgBit);
+          currMsgBit++;
+        }
+      }
+
+      // scroll arrow:
+      lcd.setCursor(7,1);
+      lcd.write(REVERSE_ARROW);
+      
+      break;
+    }
+    case 2: {
+      lcd.setCursor(0,0);
+      if(millis() > lastShown + 700) {
+        lastShown = millis();
+        if(storyMsgII[currMsgBit] == '\0') {
+          currMsgBit = 0;        
+        }else {
+          lcd_printMsg(storyMsgII + currMsgBit);
+          currMsgBit++;
+        }
+      }
+
+      // scroll arrow:
+      lcd.setCursor(7,1);
+      lcd.write(REVERSE_ARROW);
+      
+      break;
+    }
+    case 3: {
+      lcd.setCursor(0,0);
+      if(millis() > lastShown + 700) {
+        lastShown = millis();
+        if(storyMsgIII[currMsgBit] == '\0') {
+          currMsgBit = 0;        
+        }else {
+          lcd_printMsg(storyMsgIII + currMsgBit);
+          currMsgBit++;
+        }
+      }
+
+      // scroll arrow:
+      lcd.setCursor(7,1);
+      lcd.write(REVERSE_ARROW);
+      
+      break;
+    }
+    case 4: {
+      lcd.setCursor(0,0);
+      if(millis() > lastShown + 700) {
+        lastShown = millis();
+        if(storyMsgIV[currMsgBit] == '\0') {
+          currMsgBit = 0;        
+        }else {
+          lcd_printMsg(storyMsgIV + currMsgBit);
+          currMsgBit++;
+        }
+      }
+
+      // scroll arrow:
+      lcd.setCursor(7,1);
+      lcd.write(REVERSE_ARROW);
+      
+      break;
+    }
+    case 5: {
+      lcd.setCursor(0,0);
+      lcd.print("Are you ready?");
+      lcd.setCursor(0,1);
+      if(millis() > lastShown + 500) {
+        lastShown = millis();
+        if(endMsg[currMsgBit] == '\0') {
+          currMsgBit = 0;        
+        }else {
+          lcd_printMsg(endMsg + currMsgBit);
+          currMsgBit++;
+        }
+      }
+
+      red_button_pressed();
+      
+      break;
+    }
+  }
 }
 
 void game() {
@@ -536,14 +665,19 @@ void restart_game() {
 void option_choosed(unsigned int option) {
   switch(option) {
     case 1:{
-      if(firstTime == false) {
-        gameOver = false;
-        firstTime = true;
-        lcd.clear();
-        restart_game();
+      if(storyDisplay == true) {
+        storyDisplay = false;
+        story();
+      }else{
+        if(firstTime == false) {
+          gameOver = false;
+          firstTime = true;
+          lcd.clear();
+          restart_game();
+        }
+        game_over();
+        break;
       }
-      game_over();
-      break;
     }
     case 2: {
       display_settings();
