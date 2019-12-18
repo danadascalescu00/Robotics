@@ -7,6 +7,7 @@
 #define REVERSE_ARROW    byte(1)
 #define NOTES            3
 #define MATRIX_DIMENSION 8
+#define LIVES            3
 
 uint8_t ch = 0;
 uint16_t currMsgBit = 0;
@@ -73,6 +74,7 @@ boolean buttonPressed = true;
 boolean switchToLetter = true;
 boolean highScoreFirstLine = false;
 boolean playerWon = false;
+boolean gameOver = false;
 
 
 int minThreshold = 350;
@@ -82,6 +84,7 @@ int buttonState = HIGH;  // the current reading from the input pin
 int lastButtonState = HIGH; // the previous reading from the input pin
 
 unsigned int level = 1;
+unsigned int lives = LIVES;
 unsigned int startingLevel = 1;
 unsigned int option = 1;
 unsigned int displacement = 1;
@@ -114,6 +117,18 @@ byte upArrow[] = {
   B00100,
   B00100,
   B00100
+};
+
+// It is used as a template
+const byte matrix[] = {
+  B00000000,
+  B00000000,
+  B00000000,
+  B00000000,
+  B00000000,
+  B00000000,
+  B00000000,
+  B00000000
 };
 
 /* SOUNDS */
@@ -235,6 +250,7 @@ void red_button_pressed() {
     currMsgBit = 0;
     playerWon = false;
     loseSound = true;
+    gameOver = false;
   }
 }
 
@@ -331,7 +347,13 @@ void lcd_printMsg(char *str) {
 void option_choosed(unsigned int option) {
   switch(option) {
     case 1:{
-      game();
+      if(firstTime == false) {
+        gameOver = false;
+        firstTime = true;
+        lcd.clear();
+        restart_game();
+      }
+      game_over();
       break;
     }
     case 2: {
@@ -792,9 +814,31 @@ void viewTopPlayersList(int count) {
   }
 }
 
-//void game() {
-//  
-//}
+boolean checkGameOver() {
+  if(lives == 0) {
+    // player losed
+    gameOver= true
+    playerWon = false;
+    return true;
+  }else {
+    if(level == 5) {
+      // enemy defeated
+      gameOver = true;
+      playerWon = true;
+      return true;
+    }
+    return false;
+  }
+}
+
+void game() {
+  if(gameOver == false) {
+    //the game:
+    if(checkGameOver()) {
+      game_over();
+    }
+  }
+}
 
 void game_over() {
   if(playerWon == false) {
@@ -826,9 +870,18 @@ void game_over() {
       currMsgBit++;
      }
   }
-      
+
   red_button_pressed();
   
+}
+
+void restart_game() {
+  playerWon = false;
+  level = startingLevel;
+
+  for(int row = 0; row < MATRIX_DIMENSION; row++) {
+    lc.setRow(0, row, matrix[row]);
+  }
 }
 
 void setup() {
@@ -856,8 +909,8 @@ void setup() {
 
 void loop() {
 
-  updateTopPlayersList(); // MOVE TO GAME MODE
-  
+  //updateTopPlayersList(); // MOVE TO GAME MODE
+ 
   if(introductionDisplayed == false) {
     display_introduction();
   }
