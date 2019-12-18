@@ -275,6 +275,30 @@ void red_button_pressed() {
   }
 }
 
+void button_pressed() {
+  int reading = digitalRead(pushButton);
+  // check to see if the button was pressed, and we have waited long enough since
+  // the last press to ignore any noise:
+  if(reading != lastButtonState) {
+    // reset the debouncing timer
+    lastDebounceTime = millis();
+  }
+  if((millis() - lastDebounceTime) > debounceDelay) {
+    if(reading != buttonState) {
+      buttonState = reading;
+    }
+  }
+  // save the reading:
+  lastButtonState = reading;
+  if(buttonState == LOW) {
+    lcd.clear();
+    pressToStart = true;
+    firstTime = false;
+    displacement = 1;
+    currMsgBit = 0;
+  }
+}
+
 void display_introduction() {
   unsigned long phaseDuration = millis();
   if(phaseDuration - lastPhaseDuration >= phaseInterval) {
@@ -515,7 +539,7 @@ void story() {
         }
       }
 
-      red_button_pressed();
+      button_pressed();
       
       break;
     }
@@ -672,17 +696,15 @@ void option_choosed(unsigned int option) {
         while(pressToStart == false) {
           story();
         }
-      }else{
-        if(firstTime == false) {
-          gameOver = false;
-          firstTime = true;
-          lcd.clear();
-          restart_game();
-        }else{
-          game_over();
-        }
-        break;
       }
+      if(firstTime == false) {
+        gameOver = false;
+        firstTime = true;
+        lcd.clear();
+        restart_game();
+      }
+      game_over();
+      break;
     }
     case 2: {
       display_settings();
