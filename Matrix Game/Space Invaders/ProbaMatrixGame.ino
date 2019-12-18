@@ -76,7 +76,6 @@ boolean highScoreFirstLine = false;
 boolean playerWon = false;
 boolean gameOver = false;
 
-
 int minThreshold = 350;
 int maxThreshold = 750;
 
