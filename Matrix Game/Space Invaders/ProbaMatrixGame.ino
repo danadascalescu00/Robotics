@@ -359,6 +359,7 @@ void lcd_printMsg(char *str) {
     lcd.print(" ");
   }
 }
+
 boolean checkGameOver() {
   if(lives == 0) {
     // player losed
@@ -383,6 +384,12 @@ void checkMargins() {
   if(playerPos == 7) {
     playerPos = 6;
   }
+}
+
+void readPlayerEntries() {
+  xValue = analogRead(pinX);
+  switchState = !digitalRead(pinSW);
+  buttonValue = digitalRead(pushButton);
 }
 
 void game() {
