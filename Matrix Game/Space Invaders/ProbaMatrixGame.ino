@@ -56,7 +56,7 @@ const long interval = 250;
 const long passingLevelInterval = 2500;
 const long phaseInterval = 2000;
 
-int xValue, yValue;
+int xValue, yValue, buttonValue;
 int switchState = LOW;
 
 boolean joyMovedOx = false;
@@ -92,6 +92,23 @@ unsigned int Highscore = 0;
 
 int letter = 0;
 int pos = 0;
+
+// variables used for game:
+int playerPos = 4;
+const int movementDelay = 100, shootDelay = 400, bulletDelay = 3;
+unsigned long movementTime, shootTime;
+boolean noDamageTakenCurrentLevel = true;
+const int noOfBullets = 3, noOfLevels = 6, maxNumberOfEnemies = 6;
+int noOfEnemies = 0, enemiesDefeated;
+unsigned long randomNumber;
+
+//Numbers of enemies generated each level
+int levels[maxNumberOfEnemies] = {3, 6, 9, 12, 15, 0};
+
+struct Bullet {
+  unsigned long moveDelay;
+  int posX, posY;  
+}bullets[noOfBullets];
 
 // the currents address in the EEPROM for saving top three players highscore 
 const int highscoreAddrI = 0, highscoreAddrII = 32, highscoreAddrIII = 64;
@@ -340,6 +357,172 @@ void lcd_printMsg(char *str) {
   }
   while(ch++ < 16) {
     lcd.print(" ");
+  }
+}
+boolean checkGameOver() {
+  if(lives == 0) {
+    // player losed
+    gameOver= true;
+    playerWon = false;
+    return true;
+  }else {
+    if(level == 5) {
+      // enemy defeated
+      gameOver = true;
+      playerWon = true;
+      return true;
+    }
+    return false;
+  }
+}
+
+void checkMargins() {
+  if(playerPos == 0) {
+    playerPos = 1;
+  }
+  if(playerPos == 7) {
+    playerPos = 6;
+  }
+}
+
+void game() {
+  if(gameOver == false) {
+    //the game:
+    if(checkGameOver()) {
+      game_over();
+    }
+  }
+}
+
+void updateTopPlayersList() {
+  highscore highI, highII, highIII;
+  EEPROM.get(highscoreAddrI, highI);
+  EEPROM.get(highscoreAddrII, highII);
+  EEPROM.get(highscoreAddrIII, highIII);
+
+  if(score > highI.scoreH) {
+    highscore newHigh;
+    strcpy(newHigh.playerName, Name);
+    newHigh.scoreH = score;
+
+    EEPROM.put(highscoreAddrIII, highII);
+    EEPROM.put(highscoreAddrII, highI);
+    EEPROM.put(highscoreAddrI, newHigh);
+  }else{
+    if(score > highII.scoreH) {
+      highscore newHigh;
+      strcpy(newHigh.playerName, Name);
+      newHigh.scoreH = score;
+      
+      EEPROM.put(highscoreAddrIII, highII);
+      EEPROM.put(highscoreAddrII, newHigh);
+    }else{
+      if(score > highIII.scoreH) {
+        highscore newHigh;
+        strcpy(newHigh.playerName, Name);
+        newHigh.scoreH = score;
+      
+        EEPROM.put(highscoreAddrIII, newHigh);      
+      }
+    }
+  }
+}
+
+void viewTopPlayersList(int count) {
+  highscore highI, highII, highIII;
+  EEPROM.get(highscoreAddrI, highI);
+  EEPROM.get(highscoreAddrII, highII);
+  EEPROM.get(highscoreAddrIII, highIII);
+
+  switch(count) {
+    case 1: {
+      while(1) {
+        yValue = analogRead(pinY);
+        if(yValue > maxThreshold)
+          break;
+        
+        lcd.setCursor(3,0);
+        lcd.print("HIGHSCORE");
+        lcd.setCursor(0,1);
+        lcd.print("1.");
+        lcd.setCursor(3,1);
+        lcd.print(highI.playerName);
+        lcd.setCursor(12,1);
+        lcd.print(highI.scoreH);
+      }
+      break;
+    }
+    case 2: {
+      while(1) {
+        yValue = analogRead(pinY);
+        if(yValue > maxThreshold)
+          break;
+
+        lcd.setCursor(0,0);
+        lcd.print("2.");
+        lcd.setCursor(3,0);
+        lcd.print(highII.playerName);
+        lcd.setCursor(12,0);
+        lcd.print(highII.scoreH);
+
+        lcd.setCursor(0,1);
+        lcd.print("3.");
+        lcd.setCursor(3,1);
+        lcd.print(highIII.playerName);
+        lcd.setCursor(12,1);
+        lcd.print(highIII.scoreH);
+
+        // scroll arrow:
+        lcd.setCursor(15,0);
+        lcd.write(REVERSE_ARROW);
+      }
+      break;
+    }
+  }
+}
+
+void game_over() {
+  updateTopPlayersList();
+  if(playerWon == false) {
+    if(loseSound) {
+      lcd.setCursor(6,0);
+      lcd.print("YOU");
+      lcd.setCursor(5,1);
+      lcd.print("LOSED!");
+      loseSound = false;
+      for(int note = 0; note < NOTES; note++) {
+        int noteDuration = 500/ loseNoteDuration[note];
+        tone(buzzerPin, loseNotes[note], noteDuration);
+        int pauseBetweenNotes = noteDuration * 1.50;
+        delay(pauseBetweenNotes);
+        noTone(buzzerPin);
+      }
+    }
+  }
+  //exit game and return to main menu
+  lcd.setCursor(5,1);
+  lcd.print("      ");
+  lcd.setCursor(0,0);
+  if(millis() > lastShown + 500) {
+    lastShown = millis();
+    if(endMsg[currMsgBit] == '\0') {
+      currMsgBit = 0;        
+    }else {
+      lcd_printMsg(endMsg + currMsgBit);
+      currMsgBit++;
+     }
+  }
+
+  red_button_pressed();
+  
+}
+
+void restart_game() {
+  playerWon = false;
+  level = startingLevel;
+
+  for(int row = 0; row < MATRIX_DIMENSION; row++) {
+    lc.setRow(0, row, matrix[row]);
   }
 }
 
@@ -743,163 +926,6 @@ void display_info() {
   }
 }
 
-void updateTopPlayersList() {
-  highscore highI, highII, highIII;
-  EEPROM.get(highscoreAddrI, highI);
-  EEPROM.get(highscoreAddrII, highII);
-  EEPROM.get(highscoreAddrIII, highIII);
-
-  if(score > highI.scoreH) {
-    highscore newHigh;
-    strcpy(newHigh.playerName, Name);
-    newHigh.scoreH = score;
-
-    EEPROM.put(highscoreAddrIII, highII);
-    EEPROM.put(highscoreAddrII, highI);
-    EEPROM.put(highscoreAddrI, newHigh);
-  }else{
-    if(score > highII.scoreH) {
-      highscore newHigh;
-      strcpy(newHigh.playerName, Name);
-      newHigh.scoreH = score;
-      
-      EEPROM.put(highscoreAddrIII, highII);
-      EEPROM.put(highscoreAddrII, newHigh);
-    }else{
-      if(score > highIII.scoreH) {
-      highscore newHigh;
-      strcpy(newHigh.playerName, Name);
-      newHigh.scoreH = score;
-      
-      EEPROM.put(highscoreAddrIII, newHigh);      
-    }
-  }
-}
-
-void viewTopPlayersList(int count) {
-  highscore highI, highII, highIII;
-  EEPROM.get(highscoreAddrI, highI);
-  EEPROM.get(highscoreAddrII, highII);
-  EEPROM.get(highscoreAddrIII, highIII);
-
-  switch(count) {
-    case 1: {
-      while(1) {
-        yValue = analogRead(pinY);
-        if(yValue > maxThreshold)
-          break;
-        
-        lcd.setCursor(3,0);
-        lcd.print("HIGHSCORE");
-        lcd.setCursor(0,1);
-        lcd.print("1.");
-        lcd.setCursor(3,1);
-        lcd.print(highI.playerName);
-        lcd.setCursor(12,1);
-        lcd.print(highI.scoreH);
-      }
-      break;
-    }
-    case 2: {
-      while(1) {
-        yValue = analogRead(pinY);
-        if(yValue > maxThreshold)
-          break;
-
-        lcd.setCursor(0,0);
-        lcd.print("2.");
-        lcd.setCursor(3,0);
-        lcd.print(highII.playerName);
-        lcd.setCursor(12,0);
-        lcd.print(highII.scoreH);
-
-        lcd.setCursor(0,1);
-        lcd.print("3.");
-        lcd.setCursor(3,1);
-        lcd.print(highIII.playerName);
-        lcd.setCursor(12,1);
-        lcd.print(highIII.scoreH);
-
-        // scroll arrow:
-        lcd.setCursor(15,0);
-        lcd.write(REVERSE_ARROW);
-      }
-      break;
-    }
-  }
-}
-
-boolean checkGameOver() {
-  if(lives == 0) {
-    // player losed
-    gameOver= true
-    playerWon = false;
-    return true;
-  }else {
-    if(level == 5) {
-      // enemy defeated
-      gameOver = true;
-      playerWon = true;
-      return true;
-    }
-    return false;
-  }
-}
-
-void game() {
-  if(gameOver == false) {
-    //the game:
-    if(checkGameOver()) {
-      game_over();
-    }
-  }
-}
-
-void game_over() {
-  updateTopPlayersList();
-  if(playerWon == false) {
-    if(loseSound) {
-      lcd.setCursor(6,0);
-      lcd.print("YOU");
-      lcd.setCursor(5,1);
-      lcd.print("LOSED!");
-      loseSound = false;
-      for(int note = 0; note < NOTES; note++) {
-        int noteDuration = 500/ loseNoteDuration[note];
-        tone(buzzerPin, loseNotes[note], noteDuration);
-        int pauseBetweenNotes = noteDuration * 1.50;
-        delay(pauseBetweenNotes);
-        noTone(buzzerPin);
-      }
-    }
-  }
-  //exit game and return to main menu
-  lcd.setCursor(5,1);
-  lcd.print("      ");
-  lcd.setCursor(0,0);
-  if(millis() > lastShown + 500) {
-    lastShown = millis();
-    if(endMsg[currMsgBit] == '\0') {
-      currMsgBit = 0;        
-    }else {
-      lcd_printMsg(endMsg + currMsgBit);
-      currMsgBit++;
-     }
-  }
-
-  red_button_pressed();
-  
-}
-
-void restart_game() {
-  playerWon = false;
-  level = startingLevel;
-
-  for(int row = 0; row < MATRIX_DIMENSION; row++) {
-    lc.setRow(0, row, matrix[row]);
-  }
-}
-
 void setup() {
   strcpy(Name, "Unknown");
   Name[8] = '\0';
@@ -921,6 +947,8 @@ void setup() {
   lc.setIntensity(0, 5); // sets brightness (0~15 possible values)
   lc.clearDisplay(0);// clear screen
   //Serial.begin(9600);
+
+  randomSeed(analogRead(A4));
 }
 
 void loop() {
