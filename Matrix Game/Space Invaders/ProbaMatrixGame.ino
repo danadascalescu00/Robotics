@@ -424,6 +424,7 @@ void story() {
   }
 
   if(joyMovedOy == true) {
+    currMsgBit = 0;
     lcd.clear();
   }
 
@@ -501,7 +502,7 @@ void story() {
       break;
     }
     case 5: {
-      lcd.setCursor(0,0);
+      lcd.setCursor(1,0);
       lcd.print("Are you ready?");
       lcd.setCursor(0,1);
       if(millis() > lastShown + 500) {
@@ -667,15 +668,19 @@ void option_choosed(unsigned int option) {
     case 1:{
       if(storyDisplay == true) {
         storyDisplay = false;
-        story();
+        currMsgBit = 0;
+        while(pressToStart == false) {
+          story();
+        }
       }else{
         if(firstTime == false) {
           gameOver = false;
           firstTime = true;
           lcd.clear();
           restart_game();
+        }else{
+          game_over();
         }
-        game_over();
         break;
       }
     }
@@ -802,7 +807,6 @@ void display_settings() {
     int switchValue = digitalRead(pinSW);
     if(switchValue == LOW) {
       setState = !setState;
-      Serial.println("here");
     }
     
     if(setState == true) {
@@ -930,6 +934,7 @@ void display_highscore() {
   }
 
   if(joyMovedOy == true) {
+    currMsgBit = 0;
     lcd.clear();
   }
 
@@ -992,6 +997,7 @@ void display_info() {
   }
 
   if(joyMovedOy == true) {
+    currMsgBit = 0;
     lcd.clear();
   }
 
@@ -1189,6 +1195,7 @@ void loop() {
         }
       }else{
         //MAIN MENU: switch to choose: Play, Settings, Highscore or Info
+        pressToStart = false;
         option_choosed(option);
       }
     }
