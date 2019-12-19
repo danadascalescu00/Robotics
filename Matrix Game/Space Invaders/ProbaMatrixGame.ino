@@ -49,6 +49,7 @@ unsigned int redValue   = 0;
 unsigned int blueValue  = 0;
 unsigned int greenValue = 0;
 
+unsigned int enemieMovementSpeed = 1000;
 unsigned long previousMillisBlinking = 0;
 unsigned long lastLevelMillis = 0;
 unsigned long lastPhaseDuration = 0;
@@ -100,8 +101,8 @@ int pos = 0;
 
 // variables used for game:
 int playerPos = 4, enemyCounter = 0;
-const int movementDelay = 100, shootDelay = 400, bulletDelay = 8;
-unsigned long movementTime, shootTime;
+const int movementDelay = 100, enemyCreateDelay = 4000, shootDelay = 400, bulletDelay = 8;
+unsigned long movementTime, shootTime, enemyCreateTime = 0;
 boolean noDamageTakenCurrentLevel = true;
 const int noOfBullets = 3, noOfLevels = 6, maxNumberOfEnemies = 6;
 int noOfEnemies = 0, enemiesDefeated;
@@ -113,8 +114,8 @@ int levels[maxNumberOfEnemies] = {3, 6, 9, 12, 15, 0};
 
 struct Enemie {
   unsigned long createdTime, movementTime, bulletTime;
-  int posX, posY;
-  boolean created = true, notDead = true;
+  int posX = 4, posY = 0;
+  boolean created = false, notDead = true;
 };
 
 struct Bullet {
@@ -621,7 +622,7 @@ void updateRacket() {
 
 void showRacket() { 
   for(int i = 0; i < noOfBullets; i++) {
-    if(bullets[i].posY == 0) {
+    if(bullets[i].posY == -1) {
       bullets[i].posX = -2;
     }
     if(bullets[i].posX != -2) {
@@ -645,15 +646,101 @@ boolean checkLevelOver(Enemie *enemies) {
   return false;
 }
 
+void updateEnemies(Enemie *enemies) {
+  for(int i = 0; i < noOfEnemies; i++) {
+    if((enemies[i].created == true) and (enemies[i].notDead == true)) {
+      if(millis() - enemies[i].movementTime > enemieMovementSpeed) {
+        lc.setLed(0, enemies[i].posY - 1, enemies[i].posX - 1, false);
+        lc.setLed(0, enemies[i].posY, enemies[i].posX, false);
+        lc.setLed(0, enemies[i].posY - 1, enemies[i].posX + 1, false);
+        enemies[i].posX++;
+      }
+    }
+  }
+}
+
+void showEnemies(Enemie *enemies) {
+  for(int i = 0; i < noOfEnemies; i++) {
+    if(enemies[i].notDead == false) {
+      enemies[i].posX = - 5;
+    }
+    
+    if(millis() - enemyCreateTime > enemyCreateDelay) {
+      enemies[enemyCounter].created = true;
+      enemyCounter++;
+      enemyCreateTime = millis();
+    }
+
+    if((enemies[i].created == true) and (enemies[i].notDead == true)) {
+        if((enemies[i].posX >= 0) and (enemies[i].posY <= 8)) {
+          int newPos = random(0,8) % 3;
+          if((newPos == 0) or (newPos == 2)) {
+            int position = checkMarginsEnemie(enemies[i].posX-newPos);
+            lc.setLed(0, enemies[i].posY + 1, position - 1, true);
+            lc.setLed(0, enemies[i].posY, position, true);
+            lc.setLed(0, enemies[i].posY + 1, position + 1, true);
+          }else{
+            int position = checkMarginsEnemie(enemies[i].posX + newPos - 1);
+            lc.setLed(0, enemies[i].posY + 1, position - 1, true);
+            lc.setLed(0, enemies[i].posY, position, true);
+            lc.setLed(0, enemies[i].posY + 1, position + 1, true);
+          }
+        }
+    }
+  }
+}
+
+void checkBulletEnemiesCollision(Enemie *enemies) {
+  for(int i = 0; i < noOfBullets; i++) {
+    for(int j = 0; j < noOfEnemies; j++) {
+      if((bullets[i].posX != -2) and (enemies[i].posX != -5)) {
+        if ((bullets[i].posX == enemies[j].posX and bullets[i].posY == enemies[j].posY) or
+            (bullets[i].posX == enemies[j].posX - 1 and bullets[i].posY == enemies[j].posY - 1) or
+            (bullets[i].posX == enemies[j].posX + 1 and bullets[i].posY == enemies[j].posY - 1) or
+            (bullets[i].posX == enemies[j].posX and bullets[i].posY == enemies[j].posY - 1) or
+            (bullets[i].posX == enemies[j].posX - 1 and bullets[i].posY == enemies[j].posY - 2) or
+            (bullets[i].posX == enemies[j].posX + 1 and bullets[i].posY == enemies[j].posY - 2)) {
+              lc.setLed(0, bullets[i].posY, bullets[i].posX, false);
+              lc.setLed(0, enemies[j].posY - 1, enemies[j].posX - 1, false); 
+              lc.setLed(0, enemies[j].posY, enemies[j].posX, false);
+              lc.setLed(0, enemies[j].posY - 1, enemies[j].posX + 1, false);
+              enemies[j].notDead = false;
+              bullets[i].posX = -2;
+              score += (level * lives ) % enemiesDefeated;
+              enemiesDefeated++;
+            }
+      }
+    }
+  }
+}
+
 void game() {
   if(gameOver == false) {
     //the game:
+    Enemie *enemies = new Enemie[maxNumberOfEnemies];
+    noOfEnemies = maxNumberOfEnemies;
+    enemiesDefeated = 0;
     while(true) {
+      lcd.setCursor(0,0);
+      lcd.print("Lives ");
+      lcd.setCursor(6,0);
+      lcd.print(lives);
+
+      lcd.setCursor(8,0);
+      lcd.print("Score");
+      lcd.setCursor(14,0);
+      lcd.print(score);
+      
       showPlayer();
       getPlayerMovement();
 
       updateRacket();
       showRacket();
+
+      checkBulletEnemiesCollision(enemies);
+
+      updateEnemies(enemies);
+      showEnemies(enemies);
 
       if(enemiesDefeated % 20 == 0) {
         score += (level * lives * score) % 100 ;
