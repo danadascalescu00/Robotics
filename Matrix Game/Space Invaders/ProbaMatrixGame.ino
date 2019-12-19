@@ -99,13 +99,14 @@ int letter = 0;
 int pos = 0;
 
 // variables used for game:
-int playerPos = 4;
+int playerPos = 4, enemyCounter = 0;
 const int movementDelay = 100, shootDelay = 400, bulletDelay = 8;
 unsigned long movementTime, shootTime;
 boolean noDamageTakenCurrentLevel = true;
 const int noOfBullets = 3, noOfLevels = 6, maxNumberOfEnemies = 6;
 int noOfEnemies = 0, enemiesDefeated;
 unsigned long randomNumber;
+int enemieCounter = 0;
 
 //Numbers of enemies generated each level
 int levels[maxNumberOfEnemies] = {3, 6, 9, 12, 15, 0};
@@ -113,7 +114,7 @@ int levels[maxNumberOfEnemies] = {3, 6, 9, 12, 15, 0};
 struct Enemie {
   unsigned long createdTime, movementTime, bulletTime;
   int posX, posY;
-  boolean created;
+  boolean created = true, notDead = true;
 };
 
 struct Bullet {
@@ -423,6 +424,17 @@ void checkMargins() {
   }
 }
 
+int checkMarginsEnemie(int pos) {
+  if(pos == 0) {
+    pos = 1;
+  }else {
+    if(pos == 7) {
+      pos = 6;
+    }
+  }
+  return pos;
+}
+
 void readPlayerDecisions() {
   xValue = analogRead(pinX);
   switchState = !digitalRead(pinSW);
@@ -642,9 +654,18 @@ void game() {
 
       updateRacket();
       showRacket();
-    }
-    if(checkGameOver()) {
-      game_over();
+
+      if(enemiesDefeated % 20 == 0) {
+        score += (level * lives * score) % 100 ;
+      }
+
+      if(enemieCounter == 6) {
+        enemieCounter = 0;
+      }
+    
+      if(checkGameOver()) {
+        game_over();
+      }
     }
   }
 }
