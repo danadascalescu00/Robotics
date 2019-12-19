@@ -565,6 +565,19 @@ void showPlayer() {
   lc.setLed(0, 6, playerPos, false);
 }
 
+void getPlayerMovement() {
+  readPlayerDecisions();
+  if((xValue < minThreshold) and (millis() - movementTime > movementDelay)) {
+    playerPos--;
+    movementTime = millis();
+  }
+
+  if((xValue > maxThreshold) and (millis() - movementTime > movementDelay)) {
+    playerPos++;
+    movementTime = millis();
+  }
+}
+
 boolean checkLevelOver(Enemie *enemies) {
   int numberOfDeadEnemies = 0;
   for(int i = 0; i < noOfEnemies; i++) {
@@ -585,6 +598,7 @@ void game() {
     //the game:
     while(true) {
       showPlayer();
+      getPlayerMovement();
     }
     if(checkGameOver()) {
       game_over();
