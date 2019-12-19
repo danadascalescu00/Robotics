@@ -18,7 +18,7 @@ const char githubLink[]  = " https://github.com/danadascalescu00/Robotics/tree/m
 const char storyMsgI[]   = " SPACE INVADERS The Retro Game: Special Christmas Edition"; 
 const char storyMsgII[]  = " Do you think you can conqueur the galaxy?";
 const char storyMsgIII[] = " Everything will get harder as you play!";
-const char storyMsgIV[]  = " Every level passed without loosing life will get you a special power";
+const char storyMsgIV[]  = " Every level passed without losing life will get you a special power";
 
 char Name[8];
 
@@ -110,10 +110,17 @@ unsigned long randomNumber;
 //Numbers of enemies generated each level
 int levels[maxNumberOfEnemies] = {3, 6, 9, 12, 15, 0};
 
+struct Enemie {
+  unsigned long createdTime, movementTime, bulletTime;
+  int posX, posY;
+  //bool created
+  //Bullet bullets[];
+};
+
 struct Bullet {
   unsigned long moveDelay;
   int posX, posY;  
-}bullets[noOfBullets];
+}bullets[noOfBullets], enemies_bullets[noOfBullets];
 
 // the currents address in the EEPROM for saving top three players highscore 
 const int highscoreAddrI = 0, highscoreAddrII = 32, highscoreAddrIII = 64;
@@ -544,6 +551,21 @@ void story() {
       break;
     }
   }
+}
+
+boolean checkLevelOver(Enemie *enemies) {
+  int numberOfDeadEnemies = 0;
+  for(int i = 0; i < noOfEnemies; i++) {
+    if(enemies[i].posX == -1) {
+      numberOfDeadEnemies++;
+    }
+  }
+  
+  if(noOfDeadEnemies == noOfEnemies) {
+    delete[] enemies;
+    return true;
+  }
+  return false;
 }
 
 void game() {
