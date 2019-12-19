@@ -100,7 +100,7 @@ int pos = 0;
 
 // variables used for game:
 int playerPos = 4;
-const int movementDelay = 100, shootDelay = 400, bulletDelay = 3;
+const int movementDelay = 100, shootDelay = 400, bulletDelay = 8;
 unsigned long movementTime, shootTime;
 boolean noDamageTakenCurrentLevel = true;
 const int noOfBullets = 3, noOfLevels = 6, maxNumberOfEnemies = 6;
@@ -113,12 +113,12 @@ int levels[maxNumberOfEnemies] = {3, 6, 9, 12, 15, 0};
 struct Enemie {
   unsigned long createdTime, movementTime, bulletTime;
   int posX, posY;
-  //bool created
+  boolean created;
 };
 
 struct Bullet {
   unsigned long moveDelay;
-  int posX, posY;  
+  int posX = - 2, posY;  
 }bullets[noOfBullets], enemies_bullets[noOfBullets];
 
 // the currents address in the EEPROM for saving top three players highscore 
@@ -552,6 +552,20 @@ void story() {
   }
 }
 
+void playerShoot() {
+  // different missile firing mechanism:
+  Bullet bullet;
+  bullet.posX = playerPos;
+  bullet.posY = 7;
+  bullet.moveDelay = millis();
+  for(int i = 0; i < noOfBullets; i++) {
+    if(bullets[i].posX == -2) {
+      bullets[i] = bullet;
+      break;
+    }
+  }
+}
+
 void showPlayer() {
   checkMargins();
   lc.setLed(0, 7, playerPos, true);
@@ -576,6 +590,32 @@ void getPlayerMovement() {
     playerPos++;
     movementTime = millis();
   }
+
+  if((switchState == HIGH) and (millis() - shootTime > shootDelay)) {
+    playerShoot();
+    shootTime = millis();
+  }
+}
+
+void updateRacket() {
+  for(int i = 0; i < noOfBullets; i++) {
+    if((bullets[i].posX != -2) and (millis() - bullets[i].moveDelay > bulletDelay)){
+      lc.setLed(0, bullets[i].posY, bullets[i].posX, false);
+      bullets[i].moveDelay = millis();
+      bullets[i].posY--;
+    }
+  }
+}
+
+void showRacket() { 
+  for(int i = 0; i < noOfBullets; i++) {
+    if(bullets[i].posY == 0) {
+      bullets[i].posX = -2;
+    }
+    if(bullets[i].posX != -2) {
+      lc.setLed(0, bullets[i].posY, bullets[i].posX, true);
+    }
+  }
 }
 
 boolean checkLevelOver(Enemie *enemies) {
@@ -599,6 +639,9 @@ void game() {
     while(true) {
       showPlayer();
       getPlayerMovement();
+
+      updateRacket();
+      showRacket();
     }
     if(checkGameOver()) {
       game_over();
