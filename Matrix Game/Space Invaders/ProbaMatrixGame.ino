@@ -114,7 +114,6 @@ struct Enemie {
   unsigned long createdTime, movementTime, bulletTime;
   int posX, posY;
   //bool created
-  //Bullet bullets[];
 };
 
 struct Bullet {
@@ -424,10 +423,10 @@ void checkMargins() {
   }
 }
 
-void readPlayerEntries() {
+void readPlayerDecisions() {
   xValue = analogRead(pinX);
   switchState = !digitalRead(pinSW);
-  buttonValue = digitalRead(pushButton);
+  buttonValue = !digitalRead(pushButton);
 }
 
 void story() {
@@ -538,10 +537,10 @@ void story() {
       lcd.setCursor(0,1);
       if(millis() > lastShown + 500) {
         lastShown = millis();
-        if(endMsg[currMsgBit] == '\0') {
+        if(startMsg[currMsgBit] == '\0') {
           currMsgBit = 0;        
         }else {
-          lcd_printMsg(endMsg + currMsgBit);
+          lcd_printMsg(startMsg + currMsgBit);
           currMsgBit++;
         }
       }
@@ -553,6 +552,19 @@ void story() {
   }
 }
 
+void showPlayer() {
+  checkMargins();
+  lc.setLed(0, 7, playerPos, true);
+  lc.setLed(0, 7, playerPos - 1, true);
+  lc.setLed(0, 7, playerPos + 1, true);
+  lc.setLed(0, 6, playerPos, true);
+
+  lc.setLed(0, 7, playerPos, false);
+  lc.setLed(0, 7, playerPos - 1, false);
+  lc.setLed(0, 7, playerPos + 1, false);
+  lc.setLed(0, 6, playerPos, false);
+}
+
 boolean checkLevelOver(Enemie *enemies) {
   int numberOfDeadEnemies = 0;
   for(int i = 0; i < noOfEnemies; i++) {
@@ -561,7 +573,7 @@ boolean checkLevelOver(Enemie *enemies) {
     }
   }
   
-  if(noOfDeadEnemies == noOfEnemies) {
+  if(numberOfDeadEnemies == noOfEnemies) {
     delete[] enemies;
     return true;
   }
@@ -571,6 +583,9 @@ boolean checkLevelOver(Enemie *enemies) {
 void game() {
   if(gameOver == false) {
     //the game:
+    while(true) {
+      showPlayer();
+    }
     if(checkGameOver()) {
       game_over();
     }
@@ -713,6 +728,7 @@ void option_choosed(unsigned int option) {
   switch(option) {
     case 1:{
       if(storyDisplay == true) {
+        pressToStart = false;
         storyDisplay = false;
         currMsgBit = 0;
         while(pressToStart == false) {
@@ -725,7 +741,7 @@ void option_choosed(unsigned int option) {
         lcd.clear();
         restart_game();
       }
-      game_over();
+      game();
       break;
     }
     case 2: {
@@ -1239,7 +1255,6 @@ void loop() {
         }
       }else{
         //MAIN MENU: switch to choose: Play, Settings, Highscore or Info
-        pressToStart = false;
         option_choosed(option);
       }
     }
