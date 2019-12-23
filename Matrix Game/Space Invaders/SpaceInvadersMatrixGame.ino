@@ -8,8 +8,8 @@
 #define NOTES                 3
 #define MATRIX_DIMENSION      8
 #define LIVES                 3
-#define RACKET_OUT_OF_RANGE  -2
-#define ENEMIE_DESTROYED     -5
+#define RACKET_OUT_OF_RANGE   -2
+#define ENEMY_DESTROYED       -4
 
 byte downArrow[] = {
   B00100,
@@ -92,14 +92,14 @@ unsigned long lastDebounceTime = 0; // the last time the output pin was toggled
 unsigned long debounceDelay = 50; // the debounce time; increase if the output flickers
 
 const long interval = 250;
-const long passingLevelInterval = 2000;
+const long passingLevelInterval = 3000;
 const long phaseInterval = 2000;
 
 int xValue, yValue, buttonValue;
 int switchState = LOW;
 
 boolean joyMovedOx = false, joyMovedOy = false;
-boolean firstTime = false;
+boolean firstTime = false, firstTimeRGB = false;
 boolean firstLevel = false, clearedDisplayNewLevel = false;
 boolean phaseI = false;
 boolean introductionDisplayed = false;
@@ -125,17 +125,30 @@ unsigned int score = 0, Highscore = 0;
 int letter = 0, pos = 0;
 
 // variables used for game:
-boolean playerWon = false, gameOver = false, newLevelBegin = false;
+boolean playerWon = false, gameOver = false, newLevelBegin = false, noDamageTakenCurrentLevel;
+boolean displayed = false, firstStarship = true;
+int playerPos = 4, noOfEnemies = 0, currentLevel;
+unsigned int level = 1, startingLevel = 1, lives = LIVES, specialPower = 0, enemyCounter = 0;
+const int movementDelay = 100, noOfRackets = 5, firedDelay = 300,racketDelay = 10, noOfLevels = 5;
+const int enemyCreateDelay = 4000, enemyFiredDelay = 400;
+int enemyMovementDelay = 350;
+unsigned long movementTime, firedTime, enemyCreateTime;
 
-int playerPos = 4;
-unsigned int level = 1, startingLevel = 1, lives = LIVES;
-const int movementDelay = 100, noOfRackets = 5, firedDelay = 300, racketDelay = 9;
-unsigned long movementTime, firedTime;
-
-struct Racket{
+struct Racket {
   int posX = RACKET_OUT_OF_RANGE, posY;
   unsigned long moveDelay;
-}playerRackets[noOfRackets];
+}playerRackets[noOfRackets], enemieRackets[noOfRackets];
+
+struct Enemie {
+  int posX, posY;
+  boolean created, dead = false;
+  unsigned long createdTime, movementTime, firedTime;
+};
+
+// Numbers of enemies generated each level until the big boss will appear
+int enemiesGenerated[noOfLevels] = {3, 6, 9, 12, 0};
+
+Enemie *enemies;
 
 /* SOUNDS */
 int boom = NOTE_C4;
@@ -278,6 +291,100 @@ void lcdPrintMessage(char* message) {
     }else {
       lcdPrint(message + currMsgBit);
       currMsgBit++;
+    }
+  }
+}
+
+void updateTopPlayersList() {
+  highscore highI, highII, highIII;
+  EEPROM.get(highscoreAddrI, highI);
+  EEPROM.get(highscoreAddrII, highII);
+  EEPROM.get(highscoreAddrIII, highIII);
+
+  if(score > highI.scoreH) {
+    highscore newHigh;
+    strcpy(newHigh.playerName, Name);
+    newHigh.scoreH = score;
+
+    EEPROM.put(highscoreAddrIII, highII);
+    EEPROM.put(highscoreAddrII, highI);
+    EEPROM.put(highscoreAddrI, newHigh);
+  }else{
+    if(score > highII.scoreH) {
+      highscore newHigh;
+      strcpy(newHigh.playerName, Name);
+      newHigh.scoreH = score;
+      
+      EEPROM.put(highscoreAddrIII, highII);
+      EEPROM.put(highscoreAddrII, newHigh);
+    }else{
+      if(score > highIII.scoreH) {
+        highscore newHigh;
+        strcpy(newHigh.playerName, Name);
+        newHigh.scoreH = score;
+      
+        EEPROM.put(highscoreAddrIII, newHigh);      
+      }
+    }
+  }
+}
+
+void viewTopPlayersList(int count) {
+  highscore highI, highII, highIII;
+  EEPROM.get(highscoreAddrI, highI);
+  EEPROM.get(highscoreAddrII, highII);
+  EEPROM.get(highscoreAddrIII, highIII);
+
+  switch(count) {
+    case 1: {
+      lcd.setCursor(3,0);
+      lcd.print("HIGHSCORE");
+      lcd.setCursor(0,1);
+      lcd.print("1.");
+      lcd.setCursor(2,1);
+      lcd.print(highI.playerName);
+      lcd.setCursor(11,1);
+      lcd.print(highI.scoreH);
+
+      // scroll arrow:
+      lcd.setCursor(15,1);
+      lcd.write(REVERSE_ARROW);
+      
+      break;
+    }
+    case 2: {
+      lcd.setCursor(0,0);
+      lcd.print("2.");
+      lcd.setCursor(2,0);
+      lcd.print(highII.playerName);
+      lcd.setCursor(11,0);
+      lcd.print(highII.scoreH);
+
+      lcd.setCursor(0,1);
+      lcd.print("3.");
+      lcd.setCursor(2,1);
+      lcd.print(highIII.playerName);
+      lcd.setCursor(11,1);
+      lcd.print(highIII.scoreH);
+
+      // scroll arrow:
+      lcd.setCursor(15,0);
+      lcd.write(ARROW);
+      lcd.setCursor(15,1);
+      lcd.write(REVERSE_ARROW);
+      
+      break;
+    }
+    case 3: {
+      lcd.setCursor(0,0);
+      lcdPrintMessage(endMsg);
+
+      // scroll arrow:
+      lcd.setCursor(7,1);
+      lcd.write(ARROW);
+
+      redButtonPressed();
+      break;
     }
   }
 }
@@ -771,28 +878,32 @@ void newLevel() {
   lcd.setCursor(5,1);
   lcd.print("level ");
   lcd.setCursor(11,1);
-  lcd.print(level);
+  lcd.print(level + 1);
 
   levelPassed();
   unsigned long newLevelMillis = millis();
   if(newLevelMillis - lastLevelMillis >= passingLevelInterval) {
-    if(firstTime == false) {
+    if(firstTimeRGB == false) {
       lastLevelMillis = newLevelMillis;
-      firstTime = true;
+      firstTimeRGB = true;
     }else {
+      level++;
       newLevelBegin = true;
+      clearedDisplayNewLevel = false;
       lastLevelMillis = 0;
-      firstTime = false;
+      firstTimeRGB = false;
       setColors(0,0,0);
+      displayed = true;
+      firstStarship = true;
     }
   }
 }
 
 void checkMargins() {
-  if(playerPos == 0) {
+  if(playerPos <= 0) {
     playerPos = 1;
   }
-  if(playerPos == 7) {
+  if(playerPos >= 7) {
     playerPos = 6;
   }
 }
@@ -857,7 +968,7 @@ void displayStatus() {
   lcd.setCursor(9,0);
   lcd.print("Level:");
   lcd.setCursor(15,0);
-  lcd.print(level);
+  lcd.print(currentLevel);
   lcd.setCursor(0,1);
   lcd.print("Score:");
   lcd.setCursor(6,1);
@@ -885,11 +996,110 @@ void updateRackets() {
   }
 }
 
-void starshipFight() {
+Enemie* generateEnemiesCurrentLevel() {
+  displayed = false;
+  noDamageTakenCurrentLevel = true;
+  currentLevel = level;
+  const int currentLevelNumberOfEnemies = enemiesGenerated[level-1];
+  noOfEnemies = currentLevelNumberOfEnemies;
+  enemyMovementDelay = enemyMovementDelay - level*10;
+
+  Enemie *enemies = new Enemie[currentLevelNumberOfEnemies];
+  for(int i = 0; i < currentLevelNumberOfEnemies; i++) {
+    enemies[i].posY = 1;
+    enemies[i].posX = random(1,6);
+    enemies[i].created = false;
+    enemies[i].dead = false;
+    enemies[i].createdTime = millis();
+    enemies[i].movementTime = millis();
+  }
+
+  return enemies;
+}
+
+void showEnemies() {
+  for(int i = 0; i < noOfEnemies; i++) {
+    if(millis() - enemyCreateTime > enemyCreateDelay) {
+      enemies[enemyCounter].created = true;
+      enemyCounter++;
+      enemyCreateTime = millis();
+    }
+
+    if((enemies[i].created == true) and (enemies[i].dead == false)) {
+      if(enemies[i-1].dead == true) {
+        firstStarship = false;
+        lc.setLed(0, enemies[i].posY - 1, enemies[i].posX - 1, true);
+        lc.setLed(0, enemies[i].posY, enemies[i].posX, true);
+        lc.setLed(0, enemies[i].posY - 1, enemies[i].posX + 1, true);
+      }else {
+        if(firstStarship == true) {
+          lc.setLed(0, enemies[i].posY - 1, enemies[i].posX - 1, true);
+          lc.setLed(0, enemies[i].posY, enemies[i].posX, true);
+          lc.setLed(0, enemies[i].posY - 1, enemies[i].posX + 1, true);
+        }
+       }
+    }
+  }
+}
+
+void updateEnemyPosition() {
+  for(int i = 0; i < noOfEnemies; i++) {
+    if((enemies[i].created == true) and (enemies[i].dead == false)) {
+      if(millis() - enemies[i].movementTime > enemyMovementDelay) {
+          lc.setLed(0, enemies[i].posY - 1, enemies[i].posX - 1, false);
+          lc.setLed(0, enemies[i].posY, enemies[i].posX, false);
+          lc.setLed(0, enemies[i].posY - 1, enemies[i].posX + 1, false);
+          enemies[i].movementTime = millis();
+
+          int newPosition = random(0,8) % 3;
+          if((newPosition == 0) or (newPosition == 2)) {
+            enemies[i].posX--;
+          }else {
+            enemies[i].posX++;
+          }
+
+          // check margins for the new poition of the enemy:
+          if(enemies[i].posX < 1) {
+            enemies[i].posX = 1;
+          }
+          if(enemies[i].posX > 6) {
+            enemies[i].posX = 6;
+          }
+      }
+    }
+  }
+}
+
+boolean checkLevelOver() {
+  int numberOfDeadEnemies = 0;
+  for(int i = 0; i < noOfEnemies; i++) {
+    if(enemies[i].posX == ENEMY_DESTROYED) {
+      numberOfDeadEnemies++;
+    }
+  }
+  
+  // noOfEnemies = number of enemies which must be defeated to pass to the next level
+  if(numberOfDeadEnemies == noOfEnemies) {
+    delete[] enemies;
+    return true;
+  }
+  
+  return false;
+}
+
+void starshipsFight() {
   if(newLevelBegin == true) {
     if(clearedDisplayNewLevel == false) {
       lcd.clear();
       clearedDisplayNewLevel = true;
+    }
+
+    if(checkLevelOver()) {
+      if(noDamageTakenCurrentLevel) {
+        score = score + 50;
+        specialPower++;
+      }
+      newLevelBegin = false;
     }
     displayStatus();
   
@@ -898,11 +1108,19 @@ void starshipFight() {
 
     updateRackets();
     showRackets();
+
+    showEnemies();
+    updateEnemyPosition();
+    
   }else{
-    if(firstLevel == false) {
-      firstLevel = true;
+    enemies = generateEnemiesCurrentLevel();
+    if(currentLevel != startingLevel) {
+      while(displayed == false) {
+        newLevel();
+      }
     }else {
-      newLevel();
+      level++;
+      newLevelBegin = true;
     }
   }
 }
@@ -911,9 +1129,12 @@ void game() {
   if(gameOver) {
     gameIsOver();
   }else {
-    //newLevel();
+    if(firstTime == false) {
+      Enemie *enemies = new Enemie;
+      firstTime = true;
+    }
     if(level < 5) {
-      starshipFight();
+      starshipsFight();
     }
   }
 }
@@ -939,100 +1160,6 @@ void optionChoosed(unsigned int option) {
     }
     case 4: {
       displayInfo();
-      break;
-    }
-  }
-}
-
-void updateTopPlayersList() {
-  highscore highI, highII, highIII;
-  EEPROM.get(highscoreAddrI, highI);
-  EEPROM.get(highscoreAddrII, highII);
-  EEPROM.get(highscoreAddrIII, highIII);
-
-  if(score > highI.scoreH) {
-    highscore newHigh;
-    strcpy(newHigh.playerName, Name);
-    newHigh.scoreH = score;
-
-    EEPROM.put(highscoreAddrIII, highII);
-    EEPROM.put(highscoreAddrII, highI);
-    EEPROM.put(highscoreAddrI, newHigh);
-  }else{
-    if(score > highII.scoreH) {
-      highscore newHigh;
-      strcpy(newHigh.playerName, Name);
-      newHigh.scoreH = score;
-      
-      EEPROM.put(highscoreAddrIII, highII);
-      EEPROM.put(highscoreAddrII, newHigh);
-    }else{
-      if(score > highIII.scoreH) {
-        highscore newHigh;
-        strcpy(newHigh.playerName, Name);
-        newHigh.scoreH = score;
-      
-        EEPROM.put(highscoreAddrIII, newHigh);      
-      }
-    }
-  }
-}
-
-void viewTopPlayersList(int count) {
-  highscore highI, highII, highIII;
-  EEPROM.get(highscoreAddrI, highI);
-  EEPROM.get(highscoreAddrII, highII);
-  EEPROM.get(highscoreAddrIII, highIII);
-
-  switch(count) {
-    case 1: {
-      lcd.setCursor(3,0);
-      lcd.print("HIGHSCORE");
-      lcd.setCursor(0,1);
-      lcd.print("1.");
-      lcd.setCursor(2,1);
-      lcd.print(highI.playerName);
-      lcd.setCursor(11,1);
-      lcd.print(highI.scoreH);
-
-      // scroll arrow:
-      lcd.setCursor(15,1);
-      lcd.write(REVERSE_ARROW);
-      
-      break;
-    }
-    case 2: {
-      lcd.setCursor(0,0);
-      lcd.print("2.");
-      lcd.setCursor(2,0);
-      lcd.print(highII.playerName);
-      lcd.setCursor(11,0);
-      lcd.print(highII.scoreH);
-
-      lcd.setCursor(0,1);
-      lcd.print("3.");
-      lcd.setCursor(2,1);
-      lcd.print(highIII.playerName);
-      lcd.setCursor(11,1);
-      lcd.print(highIII.scoreH);
-
-      // scroll arrow:
-      lcd.setCursor(15,0);
-      lcd.write(ARROW);
-      lcd.setCursor(15,1);
-      lcd.write(REVERSE_ARROW);
-      
-      break;
-    }
-    case 3: {
-      lcd.setCursor(0,0);
-      lcdPrintMessage(endMsg);
-
-      // scroll arrow:
-      lcd.setCursor(7,1);
-      lcd.write(ARROW);
-
-      redButtonPressed();
       break;
     }
   }
