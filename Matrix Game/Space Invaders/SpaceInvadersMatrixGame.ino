@@ -55,6 +55,7 @@ const char storyMsgI[]   = " SPACE INVADERS The Retro Game: Special Christmas Ed
 const char storyMsgII[]  = " Do you think you can conqueur the galaxy?";
 const char storyMsgIII[] = " Everything will get harder as you play!";
 const char storyMsgIV[]  = " Every level passed without losing life will get you a special power and bonus score";
+const char legendMsg[]   = " LEGEND: SP = Special Power. You can activate it by pressing the red button ";
 
 char Name[8];
 
@@ -126,12 +127,12 @@ int letter = 0, pos = 0;
 
 // variables used for game:
 boolean playerWon = false, gameOver = false, newLevelBegin = false, noDamageTakenCurrentLevel;
-boolean displayed = false, firstStarship = true, firstTimeFired = true;
+boolean displayed = false, updatedTopPlayersList = false;
 int playerPos = 4, noOfEnemies = 12, currentLevel;
 unsigned int level = 1, startingLevel = 1, lives = LIVES, specialPower = 0, enemyCounter = 0;
 const int movementDelay = 100, noOfRackets = 5, firedDelay = 300, racketDelay = 10, enemyRacketDelay = 20, noOfLevels = 5;
-const int enemyCreateDelay = 5000, enemyFiredDelay = 2500;
-int enemyMovementDelay = 350;
+const int enemyCreateDelay = 5000, enemyFiredDelay = 3000;
+int enemyMovementDelay = 320;
 unsigned long movementTime, firedTime, enemyCreateTime, enemyFiredTime;
 
 struct Racket {
@@ -236,15 +237,15 @@ void redButtonPressed() {
   lastButtonState = reading;
   if(buttonState == LOW) {
     lcd.clear();
+    restartGame();
     mainMenu = true;
     pressToStart = true;
     firstTime = false;
     displacement = 1;
     currMsgBit = 0;
-    playerWon = false;
     loseSound = true;
-    gameOver = false;
     storyDisplayed = false;
+    updatedTopPlayersList = false;
   }
 }
 
@@ -486,8 +487,8 @@ void story() {
         displacement++;
         joyMovedOy = true;
       }
-      if(displacement > 6) {
-        displacement = 6;
+      if(displacement > 7) {
+        displacement = 7;
       }
     }else{
       joyMovedOy = false;
@@ -502,6 +503,7 @@ void story() {
     case 1: {
       lcd.setCursor(0,0);
       lcdPrintMessage(skipMsg);
+      
       // scroll arrow:
       lcd.setCursor(7,1);
       lcd.write(REVERSE_ARROW);
@@ -512,6 +514,7 @@ void story() {
     case 2: {
       lcd.setCursor(0,0);
       lcdPrintMessage(storyMsgI);
+      
       // scroll arrow:
       lcd.setCursor(7,1);
       lcd.write(REVERSE_ARROW);
@@ -522,6 +525,7 @@ void story() {
     case 3: {
       lcd.setCursor(0,0);
       lcdPrintMessage(storyMsgII);
+      
       //scroll arrows:
       lcd.setCursor(7,1);
       lcd.write(ARROW);
@@ -534,6 +538,7 @@ void story() {
     case 4: {
       lcd.setCursor(0,0);
       lcdPrintMessage(storyMsgIII);
+      
       //scroll arrows:
       lcd.setCursor(7,1);
       lcd.write(ARROW);
@@ -546,6 +551,7 @@ void story() {
     case 5: {
       lcd.setCursor(0,0);
       lcdPrintMessage(storyMsgIV);
+      
       //scroll arrows:
       lcd.setCursor(7,1);
       lcd.write(ARROW);
@@ -557,7 +563,22 @@ void story() {
     }
     case 6: {
       lcd.setCursor(0,0);
+      lcdPrintMessage(legendMsg);
+      
+      //scroll arrows:
+      lcd.setCursor(7,1);
+      lcd.write(ARROW);
+      lcd.setCursor(8,1);
+      lcd.write(REVERSE_ARROW);
+      
+      buttonPressedToExit();
+      break;
+      
+    }
+    case 7: {
+      lcd.setCursor(0,0);
       lcdPrintMessage(startMsg);
+      
       // scroll arrow:
       lcd.setCursor(7,1);
       lcd.write(ARROW);
@@ -568,8 +589,22 @@ void story() {
   }
 }
 
+void finalSong(float multi) {
+  for(int note = 0; note < NOTES; note++) {
+        int noteDuration = 500/ loseNoteDuration[note];
+        tone(buzzerPin, loseNotes[note], noteDuration);
+        int pauseBetweenNotes = noteDuration * multi;
+        delay(pauseBetweenNotes);
+        noTone(buzzerPin);
+      }
+}
+
 void gameIsOver() {
-  updateTopPlayersList();
+  
+  if(!updatedTopPlayersList) {
+    updatedTopPlayersList = true;
+    updateTopPlayersList();
+  }
   
   if(playerWon == false) {
     if(loseSound) {
@@ -578,13 +613,7 @@ void gameIsOver() {
       lcd.setCursor(5,1);
       lcd.print("LOSED!");
       loseSound = false;
-      for(int note = 0; note < NOTES; note++) {
-        int noteDuration = 500/ loseNoteDuration[note];
-        tone(buzzerPin, loseNotes[note], noteDuration);
-        int pauseBetweenNotes = noteDuration * 1.50;
-        delay(pauseBetweenNotes);
-        noTone(buzzerPin);
-      }
+      finalSong(1.50);
     }
   }else {
     if(winSound) {
@@ -593,13 +622,7 @@ void gameIsOver() {
       lcd.setCursor(5,1);
       lcd.print("WON!");
       winSound = false;
-      for(int note = 0; note < NOTES; note++) {
-        int noteDuration = 500/ loseNoteDuration[note];
-        tone(buzzerPin, loseNotes[note], noteDuration);
-        int pauseBetweenNotes = noteDuration * 1.20;
-        delay(pauseBetweenNotes);
-        noTone(buzzerPin);
-      }
+      finalSong(1.20);
     }
   }
   //exit game and return to main menu
@@ -607,7 +630,7 @@ void gameIsOver() {
   lcd.print("      ");
   lcd.setCursor(0,0);
   
-  lcdPrint(endMsg);
+  lcdPrintMessage(endMsg);
   redButtonPressed();
 }
 
@@ -900,7 +923,6 @@ void newLevel() {
       firstTimeRGB = false;
       setColors(0,0,0);
       displayed = true;
-      firstTimeFired = true;
     }
   }
 }
@@ -1138,9 +1160,7 @@ void checkRacketEnemyCollision() {
         if((playerRackets[i].posX == enemies[j].posX and playerRackets[j].posY == enemies[j].posY) or
            (playerRackets[i].posX == enemies[j].posX - 1 and playerRackets[j].posY == enemies[j].posY - 1) or
            (playerRackets[i].posX == enemies[j].posX + 1 and playerRackets[j].posY == enemies[j].posY - 1) or
-           (playerRackets[i].posX == enemies[j].posX and playerRackets[j].posY == enemies[j].posY - 1) or
-           (playerRackets[i].posX == enemies[j].posX - 1 and playerRackets[j].posY == enemies[j].posY ) or
-           (playerRackets[i].posX == enemies[j].posX + 1 and playerRackets[j].posY == enemies[j].posY)) {
+           (playerRackets[i].posX == enemies[j].posX and playerRackets[j].posY == enemies[j].posY - 1)) {
 
             score = score + 5;
             lc.setLed(0, enemies[j].posY - 1, enemies[j].posX - 1, false);
@@ -1162,6 +1182,22 @@ void checkRacketEnemyCollision() {
       displayStatus();
     }
     newLevelBegin = false;
+  }
+}
+
+// check collision between enemy's racket and player
+void checkRacketPlayerCollision() {
+  for(int i = 0; i < noOfRackets; i++) {
+    if(enemyRackets[i].posX != RACKET_OUT_OF_RANGE) {
+      if((enemyRackets[i].posX == playerPos and enemyRackets[i].posY == 6) or
+          (enemyRackets[i].posX == playerPos - 1 and enemyRackets[i].posY == 7) or
+          (enemyRackets[i].posX == playerPos and enemyRackets[i].posY == 6)) {
+            lives--;
+            enemyRackets[i].posX = RACKET_OUT_OF_RANGE;
+            noDamageTakenCurrentLevel = false;
+            tone(buzzerPin, boom, 200);
+      }
+    }
   }
 }
 
@@ -1216,8 +1252,14 @@ void starshipsFight() {
 
     showEnemiesRackets();
     updateEnemiesRackets();
+
+    checkRacketPlayerCollision();
+
+    activateSpecialPower();
   
     if(checkGameOver()) {
+      lcd.clear();
+      delete[] enemies;
       gameOver = true;
     }
     
@@ -1278,7 +1320,8 @@ void optionChoosed(unsigned int option) {
 }
 
 void restartGame() {
-  playerWon = false;
+  playerWon = gameOver = newLevelBegin = displayed = false;
+  noDamageTakenCurrentLevel = true;
   level = startingLevel;
   storyDisplayed = false;
   for(int row = 0; row < MATRIX_DIMENSION; row++) {
