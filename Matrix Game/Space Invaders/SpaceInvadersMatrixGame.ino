@@ -3,13 +3,13 @@
 #include <LiquidCrystal.h>
 #include "LedControl.h"
 
-#define ARROW                 byte(0)
-#define REVERSE_ARROW         byte(1)
-#define NOTES                 3
-#define MATRIX_DIMENSION      8
-#define LIVES                 3
-#define RACKET_OUT_OF_RANGE   -5
-#define ENEMY_DESTROYED       -7
+#define ARROW                        byte(0)
+#define REVERSE_ARROW                byte(1)
+#define NOTES                        3
+#define MATRIX_DIMENSION             8
+#define LIVES                        3
+#define RACKET_OUT_OF_RANGE         -5
+#define ENEMY_DESTROYED             -7
 
 byte downArrow[] = {
   B00100,
@@ -126,22 +126,22 @@ int letter = 0, pos = 0;
 
 // variables used for game:
 boolean playerWon = false, gameOver = false, newLevelBegin = false, noDamageTakenCurrentLevel;
-boolean displayed = false, firstStarship = true;
+boolean displayed = false, firstStarship = true, firstTimeFired = true;
 int playerPos = 4, noOfEnemies = 12, currentLevel;
 unsigned int level = 1, startingLevel = 1, lives = LIVES, specialPower = 0, enemyCounter = 0;
-const int movementDelay = 100, noOfRackets = 5, firedDelay = 300, racketDelay = 10, noOfLevels = 5;
-const int enemyCreateDelay = 4000, enemyFiredDelay = 400;
+const int movementDelay = 100, noOfRackets = 5, firedDelay = 300, racketDelay = 10, enemyRacketDelay = 20, noOfLevels = 5;
+const int enemyCreateDelay = 5000, enemyFiredDelay = 2500;
 int enemyMovementDelay = 350;
-unsigned long movementTime, firedTime, enemyCreateTime;
+unsigned long movementTime, firedTime, enemyCreateTime, enemyFiredTime;
 
 struct Racket {
   int posX = RACKET_OUT_OF_RANGE, posY;
   unsigned long moveDelay;
-}playerRackets[noOfRackets], enemieRackets[noOfRackets];
+}playerRackets[noOfRackets], enemyRackets[noOfRackets];
 
 struct Enemie {
   int posX, posY;
-  boolean created, dead = false;
+  boolean created, dead = false, firstTimeShoot = false;
   unsigned long createdTime, movementTime, firedTime;
 };
 
@@ -900,6 +900,7 @@ void newLevel() {
       firstTimeRGB = false;
       setColors(0,0,0);
       displayed = true;
+      firstTimeFired = true;
     }
   }
 }
@@ -933,7 +934,6 @@ void getPlayerDecisions() {
 }
 
 void playerShoot() {
-  // different missile firing mechanism:
   Racket racket;
   racket.posX = playerPos;
   racket.posY = 7;
@@ -986,7 +986,7 @@ void displayStatus() {
 
 void showRackets() {
   for(int i = 0; i < noOfRackets; i++) {
-    if(playerRackets[i].posY == 0) {
+    if(playerRackets[i].posY == -1) {
       playerRackets[i].posX = RACKET_OUT_OF_RANGE;
     }
     if(playerRackets[i].posX != RACKET_OUT_OF_RANGE) {
@@ -1028,6 +1028,30 @@ Enemie* generateEnemiesCurrentLevel() {
   return enemies;
 }
 
+void enemyShoot(int enemyPosition) {
+  Racket racket;
+  racket.posX = enemyPosition;
+  racket.posY = 0;
+  racket.moveDelay = millis();
+  for(int i = 0; i < noOfRackets; i++) {
+    if(enemyRackets[i].posX == RACKET_OUT_OF_RANGE) {
+      enemyRackets[i] = racket;
+      break;
+    }
+  }
+}
+
+void checkEnemyShoot(int enemyPosition, int index) {
+  if(millis() - enemyFiredTime > enemyFiredDelay) {
+    enemyFiredTime = millis();
+    if(enemies[index].firstTimeShoot == false) {
+      enemies[index].firstTimeShoot = true;
+    }else{
+     enemyShoot(enemyPosition); 
+    }
+  }
+}
+
 void showEnemies() {
   for(int i = 0; i < noOfEnemies; i++) {
     if(millis() - enemyCreateTime > enemyCreateDelay) {
@@ -1043,11 +1067,14 @@ void showEnemies() {
         lc.setLed(0, enemies[i].posY - 1, enemies[i].posX - 1, true);
         lc.setLed(0, enemies[i].posY, enemies[i].posX, true);
         lc.setLed(0, enemies[i].posY - 1, enemies[i].posX + 1, true);
+        checkEnemyShoot(enemies[i].posX, i);
+        
       }else {
         if(firstStarship == true) {
           lc.setLed(0, enemies[i].posY - 1, enemies[i].posX - 1, true);
           lc.setLed(0, enemies[i].posY, enemies[i].posX, true);
           lc.setLed(0, enemies[i].posY - 1, enemies[i].posX + 1, true);
+          checkEnemyShoot(enemies[i].posX, i);
         }
       }
     }
@@ -1078,6 +1105,27 @@ void updateEnemyPosition() {
           enemies[i].posX = 6;
         }
       }
+    }
+  }
+}
+
+void showEnemiesRackets() {
+  for(int i = 0; i < noOfRackets; i++) {
+    if(enemyRackets[i].posY >= 8) {
+      enemyRackets[i].posX = RACKET_OUT_OF_RANGE;
+    }
+    if(enemyRackets[i].posX != RACKET_OUT_OF_RANGE) {
+      lc.setLed(0, enemyRackets[i].posY, enemyRackets[i].posX, true);
+    }
+  }
+}
+
+void updateEnemiesRackets() {
+  for(int i = 0; i < noOfRackets; i++) {
+    if((enemyRackets[i].posX != RACKET_OUT_OF_RANGE) and (millis() - enemyRackets[i].moveDelay > enemyRacketDelay)){
+      lc.setLed(0, enemyRackets[i].posY, enemyRackets[i].posX, false);
+      enemyRackets[i].moveDelay = millis();
+      enemyRackets[i].posY++;
     }
   }
 }
@@ -1165,6 +1213,9 @@ void starshipsFight() {
     updateEnemyPosition();
 
     checkRacketEnemyCollision();
+
+    showEnemiesRackets();
+    updateEnemiesRackets();
   
     if(checkGameOver()) {
       gameOver = true;
