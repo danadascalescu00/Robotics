@@ -103,7 +103,7 @@ boolean firstTime = false, firstTimeRGB = false;
 boolean firstLevel = false, clearedDisplayNewLevel = false;
 boolean phaseI = false;
 boolean introductionDisplayed = false;
-boolean cleared = false;
+boolean cleared = false, clearedNewLevel = false;
 boolean clearedOnce = false;
 boolean mainMenu = false;
 boolean pressToStart = false;
@@ -127,7 +127,7 @@ int letter = 0, pos = 0;
 // variables used for game:
 boolean playerWon = false, gameOver = false, newLevelBegin = false, noDamageTakenCurrentLevel;
 boolean displayed = false, firstStarship = true;
-int playerPos = 4, noOfEnemies = 3, currentLevel;
+int playerPos = 4, noOfEnemies = 12, currentLevel;
 unsigned int level = 1, startingLevel = 1, lives = LIVES, specialPower = 0, enemyCounter = 0;
 const int movementDelay = 100, noOfRackets = 5, firedDelay = 300, racketDelay = 10, noOfLevels = 5;
 const int enemyCreateDelay = 4000, enemyFiredDelay = 400;
@@ -873,12 +873,17 @@ void levelPassed() {
 }
 
 void newLevel() {
+  if(!clearedNewLevel) {
+   lcd.clear();
+   clearedNewLevel = true; 
+  }
+  
   lcd.setCursor(3,0);
   lcd.print("You reached");
   lcd.setCursor(5,1);
   lcd.print("level ");
   lcd.setCursor(11,1);
-  lcd.print(level + 1);
+  lcd.print(level);
 
   levelPassed();
   unsigned long newLevelMillis = millis();
@@ -888,6 +893,7 @@ void newLevel() {
       firstTimeRGB = true;
     }else {
       level++;
+      clearedNewLevel = false;
       newLevelBegin = true;
       clearedDisplayNewLevel = false;
       lastLevelMillis = 0;
@@ -976,7 +982,7 @@ void displayStatus() {
 
 void showRackets() {
   for(int i = 0; i < noOfRackets; i++) {
-    if(playerRackets[i].posY == -1) {
+    if(playerRackets[i].posY == 0) {
       playerRackets[i].posX = RACKET_OUT_OF_RANGE;
     }
     if(playerRackets[i].posX != RACKET_OUT_OF_RANGE) {
@@ -1071,13 +1077,17 @@ void updateEnemyPosition() {
   }
 }
 
+// check collision between player's racket and enemy
 void checkRacketEnemyCollision() {
   for(int i = 0; i < noOfRackets; i++) {
     for(int j = 0; j < noOfEnemies; j++) {
       if((playerRackets[i].posX != RACKET_OUT_OF_RANGE) and (enemies[j].posX != ENEMY_DESTROYED)) {
         if((playerRackets[i].posX == enemies[j].posX and playerRackets[j].posY == enemies[j].posY) or
            (playerRackets[i].posX == enemies[j].posX - 1 and playerRackets[j].posY == enemies[j].posY - 1) or
-           (playerRackets[i].posX == enemies[j].posX + 1 and playerRackets[j].posY == enemies[j].posY - 1)) {
+           (playerRackets[i].posX == enemies[j].posX + 1 and playerRackets[j].posY == enemies[j].posY - 1) or
+           (playerRackets[i].posX == enemies[j].posX and playerRackets[j].posY == enemies[j].posY - 1) or
+           (playerRackets[i].posX == enemies[j].posX - 1 and playerRackets[j].posY == enemies[j].posY ) or
+           (playerRackets[i].posX == enemies[j].posX + 1 and playerRackets[j].posY == enemies[j].posY)) {
 
             score = score + 5;
             lc.setLed(0, enemies[j].posY - 1, enemies[j].posX - 1, false);
@@ -1090,6 +1100,16 @@ void checkRacketEnemyCollision() {
       }
     }
   }
+
+  if(checkLevelOver()) {
+    if(noDamageTakenCurrentLevel) {
+      score = score + 50;
+      specialPower++;
+      displayed = false;
+      displayStatus();
+    }
+    newLevelBegin = false;
+  }
 }
 
 boolean checkLevelOver() {
@@ -1099,9 +1119,13 @@ boolean checkLevelOver() {
       numberOfDeadEnemies++;
     }
   }
+
+  lcd.setCursor(10,1);
+  lcd.print(numberOfDeadEnemies);
   
   // noOfEnemies = number of enemies which must be defeated to pass to the next level
   if(numberOfDeadEnemies == noOfEnemies) {
+    enemyCounter = 0;
     delete[] enemies;
     return true;
   }
@@ -1135,15 +1159,15 @@ void starshipsFight() {
 
     checkRacketEnemyCollision();
 
-    if(checkLevelOver()) {
-      if(noDamageTakenCurrentLevel) {
-        score = score + 50;
-        specialPower++;
-        displayed = false;
-        displayStatus();
-      }
-      newLevelBegin = false;
-    }
+//    if(checkLevelOver()) {
+//      if(noDamageTakenCurrentLevel) {
+//        score = score + 50;
+//        specialPower++;
+//        displayed = false;
+//        displayStatus();
+//      }
+//      newLevelBegin = false;
+//    }
     
     if(checkGameOver()) {
       gameOver = true;
