@@ -92,7 +92,7 @@ unsigned long lastDebounceTime = 0; // the last time the output pin was toggled
 unsigned long debounceDelay = 50; // the debounce time; increase if the output flickers
 
 const long interval = 250;
-const long passingLevelInterval = 3000;
+const long passingLevelInterval = 5000;
 const long phaseInterval = 2000;
 
 int xValue, yValue, buttonValue;
@@ -146,7 +146,7 @@ struct Enemie {
 };
 
 // Numbers of enemies generated each level until the big boss will appear
-int enemiesGenerated[noOfLevels] = {3, 6, 9, 12, 0};
+int enemiesGenerated[noOfLevels] = {3, 4, 5, 5, 0};
 
 Enemie *enemies;
 
@@ -978,6 +978,10 @@ void displayStatus() {
   lcd.print("Score:");
   lcd.setCursor(6,1);
   lcd.print(score);
+  lcd.setCursor(11,1);
+  lcd.print("SP:");
+  lcd.setCursor(14,1);
+  lcd.print(specialPower);
 }
 
 void showRackets() {
@@ -1013,7 +1017,7 @@ Enemie* generateEnemiesCurrentLevel() {
 
   Enemie *enemies = new Enemie[currentLevelNumberOfEnemies];
   for(int i = 0; i < currentLevelNumberOfEnemies; i++) {
-    enemies[i].posY = 1;
+    enemies[i].posY = -2;
     enemies[i].posX = random(1,6);
     enemies[i].created = false;
     enemies[i].dead = false;
@@ -1027,6 +1031,7 @@ Enemie* generateEnemiesCurrentLevel() {
 void showEnemies() {
   for(int i = 0; i < noOfEnemies; i++) {
     if(millis() - enemyCreateTime > enemyCreateDelay) {
+      enemies[enemyCounter].posY = 1;
       enemies[enemyCounter].created = true;
       enemyCounter++;
       enemyCreateTime = millis();
@@ -1103,7 +1108,7 @@ void checkRacketEnemyCollision() {
 
   if(checkLevelOver()) {
     if(noDamageTakenCurrentLevel) {
-      score = score + 50;
+      score = score + 25;
       specialPower++;
       displayed = false;
       displayStatus();
@@ -1119,11 +1124,7 @@ boolean checkLevelOver() {
       numberOfDeadEnemies++;
     }
   }
-
-  lcd.setCursor(10,1);
-  lcd.print(numberOfDeadEnemies);
-  
-  // noOfEnemies = number of enemies which must be defeated to pass to the next level
+ 
   if(numberOfDeadEnemies == noOfEnemies) {
     enemyCounter = 0;
     delete[] enemies;
@@ -1137,6 +1138,12 @@ boolean checkGameOver() {
   if(lives == 0)
     return true;
   return false;
+}
+
+void clearLedMatrix() {
+  for(int row = 0; row < MATRIX_DIMENSION; row++) {
+    lc.setRow(0, row, matrix[row]);
+  }
 }
 
 void starshipsFight() {
@@ -1158,22 +1165,13 @@ void starshipsFight() {
     updateEnemyPosition();
 
     checkRacketEnemyCollision();
-
-//    if(checkLevelOver()) {
-//      if(noDamageTakenCurrentLevel) {
-//        score = score + 50;
-//        specialPower++;
-//        displayed = false;
-//        displayStatus();
-//      }
-//      newLevelBegin = false;
-//    }
-    
+  
     if(checkGameOver()) {
       gameOver = true;
     }
     
   }else{
+    clearLedMatrix();
     enemies = generateEnemiesCurrentLevel();
     if(currentLevel != startingLevel) {
       newLevelBegin = true;
@@ -1196,7 +1194,7 @@ void game() {
       Enemie *enemies = new Enemie;
       firstTime = true;
     }
-    if(level < 5) {
+    if(currentLevel < 5) {
       starshipsFight();
     }
   }
