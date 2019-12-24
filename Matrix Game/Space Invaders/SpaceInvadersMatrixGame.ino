@@ -129,7 +129,7 @@ boolean playerWon = false, gameOver = false, newLevelBegin = false, noDamageTake
 boolean displayed = false, firstStarship = true;
 int playerPos = 4, noOfEnemies = 0, currentLevel;
 unsigned int level = 1, startingLevel = 1, lives = LIVES, specialPower = 0, enemyCounter = 0;
-const int movementDelay = 100, noOfRackets = 5, firedDelay = 300,racketDelay = 10, noOfLevels = 5;
+const int movementDelay = 100, noOfRackets = 5, firedDelay = 300, racketDelay = 10, noOfLevels = 5;
 const int enemyCreateDelay = 4000, enemyFiredDelay = 400;
 int enemyMovementDelay = 350;
 unsigned long movementTime, firedTime, enemyCreateTime;
@@ -893,8 +893,6 @@ void newLevel() {
       lastLevelMillis = 0;
       firstTimeRGB = false;
       setColors(0,0,0);
-      displayed = true;
-      firstStarship = true;
     }
   }
 }
@@ -997,10 +995,12 @@ void updateRackets() {
 }
 
 Enemie* generateEnemiesCurrentLevel() {
-  displayed = false;
+  displayed = true;
+  firstStarship = true;
   noDamageTakenCurrentLevel = true;
+  
   currentLevel = level;
-  const int currentLevelNumberOfEnemies = enemiesGenerated[level-1];
+  const int currentLevelNumberOfEnemies = enemiesGenerated[currentLevel-1];
   noOfEnemies = currentLevelNumberOfEnemies;
   enemyMovementDelay = enemyMovementDelay - level*10;
 
@@ -1037,7 +1037,7 @@ void showEnemies() {
           lc.setLed(0, enemies[i].posY, enemies[i].posX, true);
           lc.setLed(0, enemies[i].posY - 1, enemies[i].posX + 1, true);
         }
-       }
+      }
     }
   }
 }
@@ -1070,6 +1070,27 @@ void updateEnemyPosition() {
   }
 }
 
+void checkRacketEnemyCollision() {
+  for(int i = 0; i < noOfRackets; i++) {
+    for(int j = 0; j < noOfEnemies; j++) {
+      if((playerRackets[i].posX != RACKET_OUT_OF_RANGE) and (enemies[j].posX != ENEMY_DESTROYED)) {
+        if((playerRackets[i].posX == enemies[j].posX and playerRackets[j].posY == enemies[j].posY) or
+           (playerRackets[i].posX == enemies[j].posX - 1 and playerRackets[j].posY == enemies[j].posY - 1) or
+           (playerRackets[i].posX == enemies[j].posX + 1 and playerRackets[j].posY == enemies[j].posY - 1)) {
+
+           lc.setLed(0, enemies[j].posY - 1, enemies[j].posX - 1, false);
+           lc.setLed(0, enemies[j].posY, enemies[j].posX, false);
+           lc.setLed(0, enemies[j].posY - 1, enemies[j].posX + 1, false);
+           enemies[j].dead = true;
+           enemies[j].posX = ENEMY_DESTROYED;
+           tone(buzzerPin, boom, boomNoteDuration);
+           score = score + 5;
+        }
+      }
+    }
+  }
+}
+
 boolean checkLevelOver() {
   int numberOfDeadEnemies = 0;
   for(int i = 0; i < noOfEnemies; i++) {
@@ -1084,6 +1105,12 @@ boolean checkLevelOver() {
     return true;
   }
   
+  return false;
+}
+
+boolean checkGameOver() {
+  if(lives == 0)
+    return true;
   return false;
 }
 
@@ -1111,6 +1138,12 @@ void starshipsFight() {
 
     showEnemies();
     updateEnemyPosition();
+
+    checkRacketEnemyCollision();
+
+    if(checkGameOver()) {
+      gameOver = true;
+    }
     
   }else{
     enemies = generateEnemiesCurrentLevel();
