@@ -8,8 +8,8 @@
 #define NOTES                 3
 #define MATRIX_DIMENSION      8
 #define LIVES                 3
-#define RACKET_OUT_OF_RANGE   -2
-#define ENEMY_DESTROYED       -4
+#define RACKET_OUT_OF_RANGE   -5
+#define ENEMY_DESTROYED       -7
 
 byte downArrow[] = {
   B00100,
@@ -127,7 +127,7 @@ int letter = 0, pos = 0;
 // variables used for game:
 boolean playerWon = false, gameOver = false, newLevelBegin = false, noDamageTakenCurrentLevel;
 boolean displayed = false, firstStarship = true;
-int playerPos = 4, noOfEnemies = 0, currentLevel;
+int playerPos = 4, noOfEnemies = 3, currentLevel;
 unsigned int level = 1, startingLevel = 1, lives = LIVES, specialPower = 0, enemyCounter = 0;
 const int movementDelay = 100, noOfRackets = 5, firedDelay = 300, racketDelay = 10, noOfLevels = 5;
 const int enemyCreateDelay = 4000, enemyFiredDelay = 400;
@@ -893,6 +893,7 @@ void newLevel() {
       lastLevelMillis = 0;
       firstTimeRGB = false;
       setColors(0,0,0);
+      displayed = true;
     }
   }
 }
@@ -995,7 +996,7 @@ void updateRackets() {
 }
 
 Enemie* generateEnemiesCurrentLevel() {
-  displayed = true;
+  displayed = false;
   firstStarship = true;
   noDamageTakenCurrentLevel = true;
   
@@ -1046,25 +1047,25 @@ void updateEnemyPosition() {
   for(int i = 0; i < noOfEnemies; i++) {
     if((enemies[i].created == true) and (enemies[i].dead == false)) {
       if(millis() - enemies[i].movementTime > enemyMovementDelay) {
-          lc.setLed(0, enemies[i].posY - 1, enemies[i].posX - 1, false);
-          lc.setLed(0, enemies[i].posY, enemies[i].posX, false);
-          lc.setLed(0, enemies[i].posY - 1, enemies[i].posX + 1, false);
-          enemies[i].movementTime = millis();
+        lc.setLed(0, enemies[i].posY - 1, enemies[i].posX - 1, false);
+        lc.setLed(0, enemies[i].posY, enemies[i].posX, false);
+        lc.setLed(0, enemies[i].posY - 1, enemies[i].posX + 1, false);
+        enemies[i].movementTime = millis();
 
-          int newPosition = random(0,8) % 3;
-          if((newPosition == 0) or (newPosition == 2)) {
-            enemies[i].posX--;
-          }else {
-            enemies[i].posX++;
-          }
+        int newPosition = random(0,8) % 3;
+        if((newPosition == 0) or (newPosition == 2)) {
+          enemies[i].posX--;
+        }else {
+          enemies[i].posX++;
+        }
 
-          // check margins for the new poition of the enemy:
-          if(enemies[i].posX < 1) {
-            enemies[i].posX = 1;
-          }
-          if(enemies[i].posX > 6) {
-            enemies[i].posX = 6;
-          }
+        // check margins for the new poition of the enemy:
+        if(enemies[i].posX < 1) {
+          enemies[i].posX = 1;
+        }
+        if(enemies[i].posX > 6) {
+          enemies[i].posX = 6;
+        }
       }
     }
   }
@@ -1078,13 +1079,13 @@ void checkRacketEnemyCollision() {
            (playerRackets[i].posX == enemies[j].posX - 1 and playerRackets[j].posY == enemies[j].posY - 1) or
            (playerRackets[i].posX == enemies[j].posX + 1 and playerRackets[j].posY == enemies[j].posY - 1)) {
 
-           lc.setLed(0, enemies[j].posY - 1, enemies[j].posX - 1, false);
-           lc.setLed(0, enemies[j].posY, enemies[j].posX, false);
-           lc.setLed(0, enemies[j].posY - 1, enemies[j].posX + 1, false);
-           enemies[j].dead = true;
-           enemies[j].posX = ENEMY_DESTROYED;
-           tone(buzzerPin, boom, boomNoteDuration);
-           score = score + 5;
+            score = score + 5;
+            lc.setLed(0, enemies[j].posY - 1, enemies[j].posX - 1, false);
+            lc.setLed(0, enemies[j].posY, enemies[j].posX, false);
+            lc.setLed(0, enemies[j].posY - 1, enemies[j].posX + 1, false);
+            enemies[j].dead = true;
+            enemies[j].posX = ENEMY_DESTROYED;
+            tone(buzzerPin, boom, boomNoteDuration);
         }
       }
     }
@@ -1094,7 +1095,7 @@ void checkRacketEnemyCollision() {
 boolean checkLevelOver() {
   int numberOfDeadEnemies = 0;
   for(int i = 0; i < noOfEnemies; i++) {
-    if(enemies[i].posX == ENEMY_DESTROYED) {
+    if(enemies[i].dead == true) {
       numberOfDeadEnemies++;
     }
   }
@@ -1120,14 +1121,7 @@ void starshipsFight() {
       lcd.clear();
       clearedDisplayNewLevel = true;
     }
-
-    if(checkLevelOver()) {
-      if(noDamageTakenCurrentLevel) {
-        score = score + 50;
-        specialPower++;
-      }
-      newLevelBegin = false;
-    }
+    
     displayStatus();
   
     showPlayer();
@@ -1141,6 +1135,16 @@ void starshipsFight() {
 
     checkRacketEnemyCollision();
 
+    if(checkLevelOver()) {
+      if(noDamageTakenCurrentLevel) {
+        score = score + 50;
+        specialPower++;
+        displayed = false;
+        displayStatus();
+      }
+      newLevelBegin = false;
+    }
+    
     if(checkGameOver()) {
       gameOver = true;
     }
@@ -1148,6 +1152,8 @@ void starshipsFight() {
   }else{
     enemies = generateEnemiesCurrentLevel();
     if(currentLevel != startingLevel) {
+      newLevelBegin = true;
+      clearedDisplayNewLevel = false;
       while(displayed == false) {
         newLevel();
       }
@@ -1225,7 +1231,7 @@ void setup() {
   lcd.home();
 
   lc.shutdown(0, false); // turn off power saving, enables display
-  lc.setIntensity(0, 5); // sets brightness (0~15 possible values)
+  lc.setIntensity(0, 4); // sets brightness (0~15 possible values)
   lc.clearDisplay(0);// clear screen
   
   //Used to generate random numbers based on the noise from the analog pin 4, which I don't use
