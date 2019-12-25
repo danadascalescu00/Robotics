@@ -93,7 +93,7 @@ unsigned long lastDebounceTime = 0; // the last time the output pin was toggled
 unsigned long debounceDelay = 50; // the debounce time; increase if the output flickers
 
 const long interval = 250;
-const long passingLevelInterval = 4000;
+const long passingLevelInterval = 5000;
 const long phaseInterval = 2000;
 
 int xValue, yValue, buttonValue;
@@ -132,7 +132,7 @@ int playerPos = 4, noOfEnemies = 12, currentLevel;
 unsigned int level = 1, startingLevel = 1, lives = LIVES, specialPower = 0, enemyCounter = 0;
 const int movementDelay = 100, firedDelay = 300, racketDelay = 15, enemyRacketDelay = 21;
 const int noOfRackets = 5, noOfLevels = 5;
-const int enemyCreateDelay = 4000, enemyFiredDelay = 1900, bigbossMovementDelay = 120, bigbossFiredDelay = 2200;
+const int enemyCreateDelay = 5000, enemyFiredDelay = 2100, bigbossMovementDelay = 160, bigbossFiredDelay = 3200;
 int enemyMovementDelay; 
 unsigned long movementTime, firedTime, enemyCreateTime, enemyFiredTime, bigbossFiredTime;
 
@@ -142,8 +142,8 @@ struct Racket {
 }playerRackets[noOfRackets], enemyRackets[noOfRackets], bigbossRackets[noOfRackets];
 
 struct Enemie {
-  int posX, posY = 1, lives = LIVES;
-  boolean created = false, dead = false, firstTimeShoot = false;
+  int posX, posY, lives = LIVES;
+  boolean created, dead = false, firstTimeShoot = false;
   unsigned long createdTime, movementTime, firedTime;
 };
 
@@ -279,11 +279,8 @@ void buttonPressedToExit() {
   lastButtonState = reading;
   if(buttonState == LOW) {
     lcd.clear();
-    lives = LIVES;
-    gameOver = false;
     pressToStart = true;
     firstTime = false;
-    firstStarship = true;
     displacement = 1;
     currMsgBit = 0;
     storyDisplayed = true;
@@ -605,6 +602,16 @@ void story() {
   }
 }
 
+void playLoseSong() {
+  for(int note = 0; note < NOTES; note++) {
+        int noteDuration = 500/ loseNoteDuration[note];
+        tone(buzzerPin, loseNotes[note], noteDuration);
+        int pauseBetweenNotes = noteDuration * 1.50;
+        delay(pauseBetweenNotes);
+        noTone(buzzerPin);
+      }
+}
+
 void gameIsOver() {
   if(!updatedTopPlayersList) {
     updatedTopPlayersList = true;
@@ -618,13 +625,7 @@ void gameIsOver() {
       lcd.setCursor(5,1);
       lcd.print("LOSED!");
       loseSound = false;
-      for(int note = 0; note < NOTES; note++) {
-        int noteDuration = 500/ loseNoteDuration[note];
-        tone(buzzerPin, loseNotes[note], noteDuration);
-        int pauseBetweenNotes = noteDuration * 1.50;
-        delay(pauseBetweenNotes);
-        noTone(buzzerPin);
-      }
+      playLoseSong;
     }
     lcd.setCursor(3,0);
     lcd.print("YOU LOSED!");
@@ -635,13 +636,7 @@ void gameIsOver() {
       lcd.setCursor(5,1);
       lcd.print("WON!");
       winSound = false;
-      for(int note = 0; note < NOTES; note++) {
-        int noteDuration = 500/ loseNoteDuration[note];
-        tone(buzzerPin, loseNotes[note], noteDuration);
-        int pauseBetweenNotes = noteDuration * 1.50;
-        delay(pauseBetweenNotes);
-        noTone(buzzerPin);
-      }
+      //finalSong(1.20);
     }
     lcd.setCursor(4,0);
     lcd.print("YOU WON!");
@@ -1106,9 +1101,9 @@ Enemie* generateEnemiesCurrentLevel() {
   noOfEnemies = currentLevelNumberOfEnemies;
   int enemyIncreaseSpeed = 0;
   for(int count = 0; count < currentLevel; count++) {
-    int enemyIncreaseSpeed = 22 * (count + 1);
+    int enemyIncreaseSpeed = 20 * (count + 1);
   }
-  enemyMovementDelay = 220 - enemyIncreaseSpeed;
+  enemyMovementDelay = 280 - enemyIncreaseSpeed;
 
   Enemie *enemies = new Enemie[currentLevelNumberOfEnemies];
   for(int i = 0; i < currentLevelNumberOfEnemies; i++) {
@@ -1250,7 +1245,7 @@ void checkRacketEnemyCollision() {
 
   if(checkLevelOver()) {
     if(noDamageTakenCurrentLevel) {
-      score = score + 50;
+      score = score + 25;
       specialPower++;
       displayStatus();
     }
@@ -1535,7 +1530,6 @@ void checkSpecialRacketBigBossCollision() {
             lc.setLed(0, bigBoss.posY, bigBoss.posX + 1, false);
             lc.setLed(0, bigBoss.posY + 1, bigBoss.posX + 1, false);
           }
-          tone(buzzerPin, boom, 150);
       }
     }
   }
@@ -1568,8 +1562,8 @@ void checkRacketPlayerBBCollision() {
   for(int i = 0; i < noOfRackets; i++) {
     if(bigbossRackets[i].posX != RACKET_OUT_OF_RANGE) {
       if((bigbossRackets[i].posX - 1 == playerPos and bigbossRackets[i].posY == 6) or
-         (bigbossRackets[i].posX - 1 == playerPos - 1 and bigbossRackets[i].posY == 7) or
-         (bigbossRackets[i].posX == playerPos and bigbossRackets[i].posY == 6)) {
+          (bigbossRackets[i].posX - 1 == playerPos - 1 and bigbossRackets[i].posY == 7) or
+          (bigbossRackets[i].posX == playerPos and bigbossRackets[i].posY == 6)) {
             lives--;
             bigbossRackets[i].posX = RACKET_OUT_OF_RANGE;
             tone(buzzerPin, boom, 150);
@@ -1612,7 +1606,6 @@ void game() {
     gameIsOver();
   }else {
     if(firstTime == false) {
-      score = 0;
       Enemie *enemies = new Enemie;
       firstTime = true;
     }
@@ -1620,10 +1613,6 @@ void game() {
       starshipsFight();
     }
     if(currentLevel == 5) {
-      if(!cleared) {
-        cleared = true;
-        lcd.clear();
-      }
       fightWithBigBoss();
     }
   }
