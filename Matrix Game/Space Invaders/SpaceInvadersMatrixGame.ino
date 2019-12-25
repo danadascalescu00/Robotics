@@ -127,24 +127,37 @@ int letter = 0, pos = 0;
 
 // variables used for game:
 boolean playerWon = false, gameOver = false, newLevelBegin = false, noDamageTakenCurrentLevel;
-boolean displayed = false, updatedTopPlayersList = false;
+boolean displayed = false, updatedTopPlayersList = false, firstStarship = true;
 int playerPos = 4, noOfEnemies = 12, currentLevel;
 unsigned int level = 1, startingLevel = 1, lives = LIVES, specialPower = 0, enemyCounter = 0;
-const int movementDelay = 100, noOfRackets = 5, firedDelay = 300, racketDelay = 10, enemyRacketDelay = 20, noOfLevels = 5;
-const int enemyCreateDelay = 5000, enemyFiredDelay = 3000;
-int enemyMovementDelay = 320;
-unsigned long movementTime, firedTime, enemyCreateTime, enemyFiredTime;
+const int movementDelay = 100, firedDelay = 300, racketDelay = 15, enemyRacketDelay = 21;
+const int noOfRackets = 5, noOfLevels = 5;
+const int enemyCreateDelay = 5000, enemyFiredDelay = 1900, bigbossMovementDelay = 120, bigbossFiredDelay = 2200;
+int enemyMovementDelay; 
+unsigned long movementTime, firedTime, enemyCreateTime, enemyFiredTime, bigbossFiredTime;
 
 struct Racket {
   int posX = RACKET_OUT_OF_RANGE, posY;
   unsigned long moveDelay;
-}playerRackets[noOfRackets], enemyRackets[noOfRackets];
+}playerRackets[noOfRackets], enemyRackets[noOfRackets], bigbossRackets[noOfRackets];
 
 struct Enemie {
-  int posX, posY;
+  int posX, posY, lives = LIVES;
   boolean created, dead = false, firstTimeShoot = false;
   unsigned long createdTime, movementTime, firedTime;
 };
+
+struct Bigboss {
+  int lives = LIVES;
+  int posX, posY = 0;
+  boolean created = false, dead = false, firstTimeShoot = false;
+  unsigned long movementTime, firedTime;
+}bigBoss;
+
+struct SpecialRacket {
+  int posX = RACKET_OUT_OF_RANGE, posY;
+  unsigned long moveDelay;
+}playerSpecialRackets[noOfRackets];
 
 // Numbers of enemies generated each level until the big boss will appear
 int enemiesGenerated[noOfLevels] = {3, 4, 5, 5, 0};
@@ -589,18 +602,17 @@ void story() {
   }
 }
 
-void finalSong(float multi) {
+void playLoseSong() {
   for(int note = 0; note < NOTES; note++) {
         int noteDuration = 500/ loseNoteDuration[note];
         tone(buzzerPin, loseNotes[note], noteDuration);
-        int pauseBetweenNotes = noteDuration * multi;
+        int pauseBetweenNotes = noteDuration * 1.50;
         delay(pauseBetweenNotes);
         noTone(buzzerPin);
       }
 }
 
 void gameIsOver() {
-  
   if(!updatedTopPlayersList) {
     updatedTopPlayersList = true;
     updateTopPlayersList();
@@ -613,8 +625,10 @@ void gameIsOver() {
       lcd.setCursor(5,1);
       lcd.print("LOSED!");
       loseSound = false;
-      finalSong(1.50);
+      playLoseSong;
     }
+    lcd.setCursor(3,0);
+    lcd.print("YOU LOSED!");
   }else {
     if(winSound) {
       lcd.setCursor(6,0);
@@ -622,14 +636,13 @@ void gameIsOver() {
       lcd.setCursor(5,1);
       lcd.print("WON!");
       winSound = false;
-      finalSong(1.20);
+      //finalSong(1.20);
     }
+    lcd.setCursor(4,0);
+    lcd.print("YOU WON!");
   }
   //exit game and return to main menu
-  lcd.setCursor(5,1);
-  lcd.print("      ");
-  lcd.setCursor(0,0);
-  
+  lcd.setCursor(0,1);
   lcdPrintMessage(endMsg);
   redButtonPressed();
 }
@@ -881,6 +894,14 @@ void displayInfo() {
   }
 }
 
+void refreshRackets() {
+  for(int i = 0; i < noOfRackets; i++) {
+    enemyRackets[i].posX = RACKET_OUT_OF_RANGE;
+    playerRackets[i].posX = RACKET_OUT_OF_RANGE;
+    playerSpecialRackets[i].posX = RACKET_OUT_OF_RANGE;
+  }
+}
+
 void levelPassed() {
   unsigned long currentMillisBlinking = millis();
   redValue = blueValue;
@@ -921,8 +942,9 @@ void newLevel() {
       clearedDisplayNewLevel = false;
       lastLevelMillis = 0;
       firstTimeRGB = false;
-      setColors(0,0,0);
       displayed = true;
+      refreshRackets();
+      setColors(0, 0, 0);
     }
   }
 }
@@ -952,7 +974,28 @@ void showPlayer() {
 void getPlayerDecisions() {
   xValue = analogRead(pinX);
   switchState = !digitalRead(pinSW);
-  buttonValue = !digitalRead(pushButton);
+}
+
+boolean buttonPressedPlayer() {
+  int reading = digitalRead(pushButton);
+  // check to see if the button was pressed, and we have waited long enough since
+  // the last press to ignore any noise:
+  if(reading != lastButtonState) {
+    // reset the debouncing timer
+    lastDebounceTime = millis();
+  }
+  if((millis() - lastDebounceTime) > debounceDelay) {
+    if(reading != buttonState) {
+      buttonState = reading;
+    }
+  }
+  // save the reading:
+  lastButtonState = reading;
+  if(buttonState == LOW) {
+    return true;
+  }else{
+    return false;
+  }
 }
 
 void playerShoot() {
@@ -963,6 +1006,19 @@ void playerShoot() {
   for(int i = 0; i < noOfRackets; i++) {
     if(playerRackets[i].posX == RACKET_OUT_OF_RANGE) {
       playerRackets[i] = racket;
+      break;
+    }
+  }
+}
+
+void playerShootSpecialRacket() {
+  SpecialRacket racket;
+  racket.posX = playerPos;
+  racket.posY = 7;
+  racket.moveDelay = millis();
+  for(int i = 0; i < noOfRackets; i++) {
+    if(playerSpecialRackets[i].posX == RACKET_OUT_OF_RANGE) {
+      playerSpecialRackets[i] = racket;
       break;
     }
   }
@@ -984,6 +1040,14 @@ void getPlayerMovement() {
   if((switchState == HIGH) and (millis() - firedTime > firedDelay)) {
     firedTime = millis();
     playerShoot();
+  }
+
+  if(buttonPressedPlayer() and (millis() - firedTime > firedDelay)) {
+    if(specialPower > 0) {
+      specialPower--;
+      firedTime = millis();
+      playerShootSpecialRacket();
+    }
   }
 }
 
@@ -1035,7 +1099,11 @@ Enemie* generateEnemiesCurrentLevel() {
   currentLevel = level;
   const int currentLevelNumberOfEnemies = enemiesGenerated[currentLevel-1];
   noOfEnemies = currentLevelNumberOfEnemies;
-  enemyMovementDelay = enemyMovementDelay - level*10;
+  int enemyIncreaseSpeed = 0;
+  for(int count = 0; count < currentLevel; count++) {
+    int enemyIncreaseSpeed = 20 * (count + 1);
+  }
+  enemyMovementDelay = 260 - enemyIncreaseSpeed;
 
   Enemie *enemies = new Enemie[currentLevelNumberOfEnemies];
   for(int i = 0; i < currentLevelNumberOfEnemies; i++) {
@@ -1064,12 +1132,13 @@ void enemyShoot(int enemyPosition) {
 }
 
 void checkEnemyShoot(int enemyPosition, int index) {
-  if(millis() - enemyFiredTime > enemyFiredDelay) {
+  if(enemies[index].firstTimeShoot == false) {
+    enemies[index].firstTimeShoot = true;
     enemyFiredTime = millis();
-    if(enemies[index].firstTimeShoot == false) {
-      enemies[index].firstTimeShoot = true;
-    }else{
-     enemyShoot(enemyPosition); 
+  }else{
+    if(millis() - enemyFiredTime > enemyFiredDelay) {
+      enemyShoot(enemyPosition);
+      enemyFiredTime = millis();
     }
   }
 }
@@ -1178,9 +1247,10 @@ void checkRacketEnemyCollision() {
     if(noDamageTakenCurrentLevel) {
       score = score + 25;
       specialPower++;
-      displayed = false;
       displayStatus();
     }
+    displayed = false;
+    firstStarship = true;
     newLevelBegin = false;
   }
 }
@@ -1208,19 +1278,23 @@ boolean checkLevelOver() {
       numberOfDeadEnemies++;
     }
   }
- 
   if(numberOfDeadEnemies == noOfEnemies) {
     enemyCounter = 0;
     delete[] enemies;
     return true;
-  }
-  
+  } 
   return false;
 }
 
 boolean checkGameOver() {
-  if(lives == 0)
+  if(lives == 0){
+    playerWon = false;
     return true;
+  }
+  if(bigBoss.dead == true) {
+    playerWon = true;
+    return true;
+  }
   return false;
 }
 
@@ -1229,6 +1303,60 @@ void clearLedMatrix() {
     lc.setRow(0, row, matrix[row]);
   }
 }
+
+void showSpecialRacket() {
+  for(int i = 0; i < noOfRackets; i++) {
+    if(playerSpecialRackets[i].posY == -1) {
+      playerSpecialRackets[i].posX = RACKET_OUT_OF_RANGE;
+    }
+    if(playerSpecialRackets[i].posX != RACKET_OUT_OF_RANGE) {
+      lc.setLed(0, playerSpecialRackets[i].posY, playerSpecialRackets[i].posX - 1, true);
+      lc.setLed(0, playerSpecialRackets[i].posY, playerSpecialRackets[i].posX, true);
+      lc.setLed(0, playerSpecialRackets[i].posY, playerSpecialRackets[i].posX + 1, true);
+    }
+  }
+}
+
+void updateSpecialRackets() {
+  for(int i = 0; i < noOfRackets; i++) {
+    if((playerSpecialRackets[i].posX != RACKET_OUT_OF_RANGE) and 
+      (millis() - playerSpecialRackets[i].moveDelay > racketDelay)) {
+        lc.setLed(0, playerSpecialRackets[i].posY, playerSpecialRackets[i].posX - 1, false);
+        lc.setLed(0, playerSpecialRackets[i].posY, playerSpecialRackets[i].posX, false);
+        lc.setLed(0, playerSpecialRackets[i].posY, playerSpecialRackets[i].posX + 1, false);
+        playerSpecialRackets[i].moveDelay = millis();
+        playerSpecialRackets[i].posY--;
+    }
+  }
+}
+
+void checkSpecialRacketCollision() {
+  for(int i = 0; i < noOfRackets; i++) {
+    for(int j = 0; j < noOfEnemies; j++) {
+      if((playerSpecialRackets[i].posX != RACKET_OUT_OF_RANGE) and (enemies[j].posX != ENEMY_DESTROYED)) {
+        if((playerSpecialRackets[i].posX == enemies[j].posX and playerSpecialRackets[j].posY == enemies[j].posY) or
+           (playerSpecialRackets[i].posX == enemies[j].posX - 1 and playerSpecialRackets[j].posY == enemies[j].posY - 1) or
+           (playerSpecialRackets[i].posX == enemies[j].posX + 1 and playerSpecialRackets[j].posY == enemies[j].posY - 1) or
+           (playerSpecialRackets[i].posX - 1 == enemies[j].posX and playerSpecialRackets[j].posY == enemies[j].posY) or
+           (playerSpecialRackets[i].posX - 1 == enemies[j].posX + 1 and playerSpecialRackets[j].posY == enemies[j].posY + 1) or
+           (playerSpecialRackets[i].posX - 1 == enemies[j].posX - 1 and playerSpecialRackets[j].posY == enemies[j].posY - 1) or 
+           (playerSpecialRackets[i].posX + 1 == enemies[j].posX and playerSpecialRackets[j].posY == enemies[j].posY) or
+           (playerSpecialRackets[i].posX + 1 == enemies[j].posX + 1 and playerSpecialRackets[j].posY == enemies[j].posY + 1) or
+           (playerSpecialRackets[i].posX + 1 == enemies[j].posX - 1 and playerSpecialRackets[j].posY == enemies[j].posY - 1)) {
+
+            score = score + 5;
+            lc.setLed(0, enemies[j].posY - 1, enemies[j].posX - 1, false);
+            lc.setLed(0, enemies[j].posY, enemies[j].posX, false);
+            lc.setLed(0, enemies[j].posY - 1, enemies[j].posX + 1, false);
+            enemies[j].dead = true;
+            enemies[j].posX = ENEMY_DESTROYED;
+            tone(buzzerPin, boom, 200);
+        }
+      }
+    }
+  }
+}
+
 
 void starshipsFight() {
   if(newLevelBegin == true) {
@@ -1244,25 +1372,25 @@ void starshipsFight() {
 
     updateRackets();
     showRackets();
+    checkRacketEnemyCollision();
 
     showEnemies();
     updateEnemyPosition();
-
-    checkRacketEnemyCollision();
-
+    
     showEnemiesRackets();
     updateEnemiesRackets();
-
     checkRacketPlayerCollision();
 
-    activateSpecialPower();
+    showSpecialRacket();
+    updateSpecialRackets();
+
+    checkSpecialRacketCollision();
   
     if(checkGameOver()) {
       lcd.clear();
       delete[] enemies;
       gameOver = true;
     }
-    
   }else{
     clearLedMatrix();
     enemies = generateEnemiesCurrentLevel();
@@ -1279,8 +1407,203 @@ void starshipsFight() {
   }
 }
 
+void bigBossShoot() {
+  Racket racket;
+  racket.posX = bigBoss.posX;
+  racket.posY = 0; 
+  racket.moveDelay = millis();
+  for(int i = 0; i < noOfRackets; i++) {
+    if(bigbossRackets[i].posX == RACKET_OUT_OF_RANGE) {
+      bigbossRackets[i] = racket;
+      break;
+    }
+  }
+}
+
+void checkBigBossShoot() {
+  if(bigBoss.firstTimeShoot == false) {
+    bigBoss.firstTimeShoot = true;
+    bigBoss.firedTime = millis();
+  }else {
+    if(millis() - bigBoss.firedTime > bigbossFiredDelay) {
+      bigBossShoot();
+      bigBoss.firedTime = millis();
+    }
+  }
+}
+
+void showBigBoss() {
+  if(bigBoss.created == false) {
+    bigBoss.posX = random(1,6);
+    bigBoss.created = true;
+  }
+  lc.setLed(0, bigBoss.posY, bigBoss.posX - 1, true);
+  lc.setLed(0, bigBoss.posY + 1, bigBoss.posX - 1, true);
+  lc.setLed(0, bigBoss.posY, bigBoss.posX, true);
+  lc.setLed(0, bigBoss.posY, bigBoss.posX + 1, true);
+  lc.setLed(0, bigBoss.posY + 1, bigBoss.posX + 1, true);
+
+  checkBigBossShoot();
+}
+
+void updateBigBoss() {
+  if((bigBoss.created == true) and (bigBoss.dead == false)) {
+    if(millis() - bigBoss.movementTime > bigbossMovementDelay) {
+      lc.setLed(0, bigBoss.posY, bigBoss.posX - 1, false);
+      lc.setLed(0, bigBoss.posY + 1, bigBoss.posX - 1, false);
+      lc.setLed(0, bigBoss.posY, bigBoss.posX, false);
+      lc.setLed(0, bigBoss.posY, bigBoss.posX + 1, false);
+      lc.setLed(0, bigBoss.posY + 1, bigBoss.posX + 1, false);
+      bigBoss.movementTime = millis();
+
+      int newPosition = random(0,8) % 3;
+      if((newPosition == 0) or (newPosition == 2)) {
+        bigBoss.posX++;
+      }else {
+        bigBoss.posX--;
+      }
+
+      // check margins for the new poition of the enemy:
+      if(bigBoss.posX < 1) {
+        bigBoss.posX = 1;
+      }
+      if(bigBoss.posX > 6) {
+        bigBoss.posX = 6;
+      }
+    }
+  }
+}
+
+// check collision between player's racket and enemy
+void checkRacketBigBossCollision() {
+  for(int i = 0; i < noOfRackets; i++) {
+    for(int j = 0; j < noOfEnemies; j++) {
+      if((playerRackets[i].posX != RACKET_OUT_OF_RANGE) and (enemies[j].posX != ENEMY_DESTROYED)) {
+        if((playerRackets[i].posX == bigBoss.posX and playerRackets[j].posY == bigBoss.posY) or
+           (playerRackets[i].posX == bigBoss.posX - 1 and playerRackets[j].posY == bigBoss.posY + 1) or
+           (playerRackets[i].posX == bigBoss.posX + 1 and playerRackets[j].posY == bigBoss.posY + 1) or
+           (playerRackets[i].posX == bigBoss.posX - 1 and playerRackets[j].posY == bigBoss.posY + 1) or
+           (playerRackets[i].posX == bigBoss.posX - 1 and playerRackets[j].posY == enemies[j].posY + 1) or
+           (playerRackets[i].posX == bigBoss.posX + 1 and playerRackets[j].posY == enemies[j].posY + 1)) {
+
+            score = score + 10;
+            bigBoss.lives--;
+            if(bigBoss.lives == 0) {
+              gameOver = true;
+              bigBoss.dead = true;
+              bigBoss.posX = ENEMY_DESTROYED;
+              lc.setLed(0, bigBoss.posY + 1, bigBoss.posX  - 1, false);
+              lc.setLed(0, bigBoss.posY + 1, bigBoss.posX, false);
+              lc.setLed(0, bigBoss.posY, bigBoss.posX, false);
+              lc.setLed(0, bigBoss.posY, bigBoss.posX + 1, false);
+              lc.setLed(0, bigBoss.posY + 1, bigBoss.posX + 1, false);
+            }
+            tone(buzzerPin, boom, 125);
+        }
+      }
+    }
+  }
+}
+
+void checkSpecialRacketBigBossCollision() {
+  for(int i = 0; i < noOfRackets; i++) {
+    if((playerSpecialRackets[i].posX != RACKET_OUT_OF_RANGE) and (bigBoss.posX != ENEMY_DESTROYED)) {
+      if((playerSpecialRackets[i].posX == bigBoss.posX and playerSpecialRackets[i].posY == bigBoss.posY) or
+         (playerSpecialRackets[i].posX - 1 == bigBoss.posX and playerSpecialRackets[i].posY == bigBoss.posY) or
+         (playerSpecialRackets[i].posX + 1 == bigBoss.posX and playerSpecialRackets[i].posY == bigBoss.posY) or
+         (playerSpecialRackets[i].posX == bigBoss.posX - 1 and playerRackets[i].posY == bigBoss.posY + 1) or
+         (playerSpecialRackets[i].posX == bigBoss.posX + 1 and playerSpecialRackets[i].posY == bigBoss.posY + 1) or
+         (playerSpecialRackets[i].posX - 1 == bigBoss.posX  and playerSpecialRackets[i].posY == bigBoss.posY + 1) or
+         (playerSpecialRackets[i].posX - 1 == bigBoss.posX + 1  and playerSpecialRackets[i].posY == bigBoss.posY + 1) or
+         (playerSpecialRackets[i].posX + 1 == bigBoss.posX - 1  and playerSpecialRackets[i].posY == bigBoss.posY + 1)or
+         (playerSpecialRackets[i].posX + 1 == bigBoss.posX + 1  and playerSpecialRackets[i].posY == bigBoss.posY + 1)) {
+
+          score = score + 10;
+          bigBoss.lives--;
+          if(bigBoss.lives == 0) {
+            bigBoss.posX = ENEMY_DESTROYED;
+            bigBoss.dead = true;
+            gameOver = true;
+            lc.setLed(0, bigBoss.posY + 1, bigBoss.posX  - 1, false);
+            lc.setLed(0, bigBoss.posY + 1, bigBoss.posX, false);
+            lc.setLed(0, bigBoss.posY, bigBoss.posX, false);
+            lc.setLed(0, bigBoss.posY, bigBoss.posX + 1, false);
+            lc.setLed(0, bigBoss.posY + 1, bigBoss.posX + 1, false);
+          }
+          tone(buzzerPin, boom, 150);
+      }
+    }
+  }
+}
+
+void showBigBossRackets() { 
+  for(int i = 0; i < noOfRackets; i++) {
+    if(bigbossRackets[i].posY >= 8) {
+      bigbossRackets[i].posX = RACKET_OUT_OF_RANGE;
+    }
+    if(bigbossRackets[i].posX != RACKET_OUT_OF_RANGE) {
+      lc.setLed(0, bigbossRackets[i].posY, bigbossRackets[i].posX - 1, true);
+      lc.setLed(0, bigbossRackets[i].posY, bigbossRackets[i].posX + 1, true);
+    }
+  }
+}
+
+void updateBigBossRackets() {
+  for(int i = 0; i < noOfRackets; i++) {
+    if((bigbossRackets[i].posX != RACKET_OUT_OF_RANGE) and (millis() - bigbossRackets[i].moveDelay > enemyRacketDelay)) {
+      lc.setLed(0, bigbossRackets[i].posY, bigbossRackets[i].posX - 1, false);
+      lc.setLed(0, bigbossRackets[i].posY, bigbossRackets[i].posX + 1, false);
+      bigbossRackets[i].posY++;
+    }
+  }
+}
+
+// check collision between big boss's racket and player
+void checkRacketPlayerBBCollision() {
+  for(int i = 0; i < noOfRackets; i++) {
+    if(bigbossRackets[i].posX != RACKET_OUT_OF_RANGE) {
+      if((bigbossRackets[i].posX - 1 == playerPos and bigbossRackets[i].posY == 6) or
+         (bigbossRackets[i].posX - 1 == playerPos - 1 and bigbossRackets[i].posY == 7) or
+         (bigbossRackets[i].posX == playerPos and bigbossRackets[i].posY == 6)) {
+            lives--;
+            bigbossRackets[i].posX = RACKET_OUT_OF_RANGE;
+            tone(buzzerPin, boom, 150);
+      }
+    }
+  }
+}
+
+void fightWithBigBoss() {
+  displayStatus();
+  
+  showPlayer();
+  getPlayerMovement();
+
+  updateRackets();
+  showRackets();
+
+  showBigBoss();
+  updateBigBoss();
+
+  showBigBossRackets();
+  updateBigBossRackets();
+  
+  checkRacketPlayerBBCollision();
+  checkRacketBigBossCollision();
+
+  showSpecialRacket();
+  updateSpecialRackets();
+  checkSpecialRacketBigBossCollision();
+  
+  if(checkGameOver()) {
+    lcd.clear();
+    gameOver = true;
+  }
+}
+
 void game() {
   if(gameOver) {
+    refreshRackets();
     gameIsOver();
   }else {
     if(firstTime == false) {
@@ -1290,6 +1613,13 @@ void game() {
     if(currentLevel < 5) {
       starshipsFight();
     }
+    if(currentLevel == 5) {
+      if(!cleared) {
+        cleared = true;
+        lcd.clear();
+      }
+      fightWithBigBoss();
+    }
   }
 }
 
@@ -1297,6 +1627,7 @@ void optionChoosed(unsigned int option) {
   switch(option) {
     case 1:{
       if(storyDisplayed == false) {
+        restartGame();
         story();
       }else{
         game();
@@ -1431,7 +1762,6 @@ void loop() {
           joyMovedOx = false;
           joyMovedOy = false;
         }
-        
       }else{
         //MAIN MENU: switch to choose: Play, Settings, Highscore or Info
         optionChoosed(option);
