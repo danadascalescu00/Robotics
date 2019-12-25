@@ -945,6 +945,7 @@ void newLevel() {
       displayed = true;
       refreshRackets();
       setColors(0, 0, 0);
+      lcd.clear();
     }
   }
 }
@@ -1159,7 +1160,6 @@ void showEnemies() {
         lc.setLed(0, enemies[i].posY, enemies[i].posX, true);
         lc.setLed(0, enemies[i].posY - 1, enemies[i].posX + 1, true);
         checkEnemyShoot(enemies[i].posX, i);
-        
       }else {
         if(firstStarship == true) {
           lc.setLed(0, enemies[i].posY - 1, enemies[i].posX - 1, true);
@@ -1249,6 +1249,7 @@ void checkRacketEnemyCollision() {
       specialPower++;
       displayStatus();
     }
+    lcd.clear();
     displayed = false;
     firstStarship = true;
     newLevelBegin = false;
