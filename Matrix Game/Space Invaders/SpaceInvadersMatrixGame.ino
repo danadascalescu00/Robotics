@@ -283,6 +283,7 @@ void buttonPressedToExit() {
     gameOver = false;
     pressToStart = true;
     firstTime = false;
+    firstStarship = true;
     displacement = 1;
     currMsgBit = 0;
     storyDisplayed = true;
@@ -1107,7 +1108,7 @@ Enemie* generateEnemiesCurrentLevel() {
   for(int count = 0; count < currentLevel; count++) {
     int enemyIncreaseSpeed = 22 * (count + 1);
   }
-  enemyMovementDelay = 240 - enemyIncreaseSpeed;
+  enemyMovementDelay = 220 - enemyIncreaseSpeed;
 
   Enemie *enemies = new Enemie[currentLevelNumberOfEnemies];
   for(int i = 0; i < currentLevelNumberOfEnemies; i++) {
