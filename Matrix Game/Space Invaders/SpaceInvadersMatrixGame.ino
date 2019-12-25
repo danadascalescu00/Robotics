@@ -148,7 +148,7 @@ struct Enemie {
 };
 
 struct Bigboss {
-  int lives = LIVES;
+  int lives;
   int posX, posY = 0;
   boolean created = false, dead = false, firstTimeShoot = false;
   unsigned long movementTime, firedTime;
@@ -1437,6 +1437,7 @@ void showBigBoss() {
   if(bigBoss.created == false) {
     bigBoss.posX = random(1,6);
     bigBoss.created = true;
+    bigBoss.lives = LIVES;
   }
   lc.setLed(0, bigBoss.posY, bigBoss.posX - 1, true);
   lc.setLed(0, bigBoss.posY + 1, bigBoss.posX - 1, true);
@@ -1478,14 +1479,12 @@ void updateBigBoss() {
 // check collision between player's racket and enemy
 void checkRacketBigBossCollision() {
   for(int i = 0; i < noOfRackets; i++) {
-    for(int j = 0; j < noOfEnemies; j++) {
-      if((playerRackets[i].posX != RACKET_OUT_OF_RANGE) and (enemies[j].posX != ENEMY_DESTROYED)) {
-        if((playerRackets[i].posX == bigBoss.posX and playerRackets[j].posY == bigBoss.posY) or
-           (playerRackets[i].posX == bigBoss.posX - 1 and playerRackets[j].posY == bigBoss.posY + 1) or
-           (playerRackets[i].posX == bigBoss.posX + 1 and playerRackets[j].posY == bigBoss.posY + 1) or
-           (playerRackets[i].posX == bigBoss.posX - 1 and playerRackets[j].posY == bigBoss.posY + 1) or
-           (playerRackets[i].posX == bigBoss.posX - 1 and playerRackets[j].posY == enemies[j].posY + 1) or
-           (playerRackets[i].posX == bigBoss.posX + 1 and playerRackets[j].posY == enemies[j].posY + 1)) {
+    if((playerRackets[i].posX != RACKET_OUT_OF_RANGE) and (bigBoss.posX != ENEMY_DESTROYED)) {
+        if((playerRackets[i].posX == bigBoss.posX and playerRackets[i].posY == bigBoss.posY) or
+           (playerRackets[i].posX == bigBoss.posX - 1 and playerRackets[i].posY == bigBoss.posY + 1) or
+           (playerRackets[i].posX == bigBoss.posX + 1 and playerRackets[i].posY == bigBoss.posY + 1) or
+           (playerRackets[i].posX == bigBoss.posX - 1 and playerRackets[i].posY == bigBoss.posY ) or
+           (playerRackets[i].posX == bigBoss.posX + 1 and playerRackets[i].posY == bigBoss.posY)) {
 
             score = score + 10;
             bigBoss.lives--;
@@ -1502,7 +1501,6 @@ void checkRacketBigBossCollision() {
             tone(buzzerPin, boom, 125);
         }
       }
-    }
   }
 }
 
@@ -1521,6 +1519,7 @@ void checkSpecialRacketBigBossCollision() {
 
           score = score + 10;
           bigBoss.lives--;
+          tone(buzzerPin, boom, 150);
           if(bigBoss.lives == 0) {
             bigBoss.posX = ENEMY_DESTROYED;
             bigBoss.dead = true;
