@@ -132,7 +132,7 @@ int playerPos = 4, noOfEnemies = 12, currentLevel;
 unsigned int level = 1, startingLevel = 1, lives = LIVES, specialPower = 0, enemyCounter = 0;
 const int movementDelay = 100, firedDelay = 300, racketDelay = 15, enemyRacketDelay = 21;
 const int noOfRackets = 5, noOfLevels = 5;
-const int enemyCreateDelay = 5000, enemyFiredDelay = 1900, bigbossMovementDelay = 120, bigbossFiredDelay = 2200;
+const int enemyCreateDelay = 4000, enemyFiredDelay = 1900, bigbossMovementDelay = 120, bigbossFiredDelay = 2200;
 int enemyMovementDelay; 
 unsigned long movementTime, firedTime, enemyCreateTime, enemyFiredTime, bigbossFiredTime;
 
@@ -602,16 +602,6 @@ void story() {
   }
 }
 
-void playLoseSong() {
-  for(int note = 0; note < NOTES; note++) {
-        int noteDuration = 500/ loseNoteDuration[note];
-        tone(buzzerPin, loseNotes[note], noteDuration);
-        int pauseBetweenNotes = noteDuration * 1.50;
-        delay(pauseBetweenNotes);
-        noTone(buzzerPin);
-      }
-}
-
 void gameIsOver() {
   if(!updatedTopPlayersList) {
     updatedTopPlayersList = true;
@@ -625,7 +615,13 @@ void gameIsOver() {
       lcd.setCursor(5,1);
       lcd.print("LOSED!");
       loseSound = false;
-      playLoseSong;
+      for(int note = 0; note < NOTES; note++) {
+        int noteDuration = 500/ loseNoteDuration[note];
+        tone(buzzerPin, loseNotes[note], noteDuration);
+        int pauseBetweenNotes = noteDuration * 1.50;
+        delay(pauseBetweenNotes);
+        noTone(buzzerPin);
+      }
     }
     lcd.setCursor(3,0);
     lcd.print("YOU LOSED!");
@@ -636,7 +632,13 @@ void gameIsOver() {
       lcd.setCursor(5,1);
       lcd.print("WON!");
       winSound = false;
-      //finalSong(1.20);
+      for(int note = 0; note < NOTES; note++) {
+        int noteDuration = 500/ loseNoteDuration[note];
+        tone(buzzerPin, loseNotes[note], noteDuration);
+        int pauseBetweenNotes = noteDuration * 1.50;
+        delay(pauseBetweenNotes);
+        noTone(buzzerPin);
+      }
     }
     lcd.setCursor(4,0);
     lcd.print("YOU WON!");
@@ -1101,9 +1103,9 @@ Enemie* generateEnemiesCurrentLevel() {
   noOfEnemies = currentLevelNumberOfEnemies;
   int enemyIncreaseSpeed = 0;
   for(int count = 0; count < currentLevel; count++) {
-    int enemyIncreaseSpeed = 20 * (count + 1);
+    int enemyIncreaseSpeed = 22 * (count + 1);
   }
-  enemyMovementDelay = 260 - enemyIncreaseSpeed;
+  enemyMovementDelay = 240 - enemyIncreaseSpeed;
 
   Enemie *enemies = new Enemie[currentLevelNumberOfEnemies];
   for(int i = 0; i < currentLevelNumberOfEnemies; i++) {
