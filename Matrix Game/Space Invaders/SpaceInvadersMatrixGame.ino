@@ -93,7 +93,7 @@ unsigned long lastDebounceTime = 0; // the last time the output pin was toggled
 unsigned long debounceDelay = 50; // the debounce time; increase if the output flickers
 
 const long interval = 250;
-const long passingLevelInterval = 5000;
+const long passingLevelInterval = 4000;
 const long phaseInterval = 2000;
 
 int xValue, yValue, buttonValue;
@@ -142,8 +142,8 @@ struct Racket {
 }playerRackets[noOfRackets], enemyRackets[noOfRackets], bigbossRackets[noOfRackets];
 
 struct Enemie {
-  int posX, posY, lives = LIVES;
-  boolean created, dead = false, firstTimeShoot = false;
+  int posX, posY = 1, lives = LIVES;
+  boolean created = false, dead = false, firstTimeShoot = false;
   unsigned long createdTime, movementTime, firedTime;
 };
 
@@ -279,6 +279,8 @@ void buttonPressedToExit() {
   lastButtonState = reading;
   if(buttonState == LOW) {
     lcd.clear();
+    lives = LIVES;
+    gameOver = false;
     pressToStart = true;
     firstTime = false;
     displacement = 1;
@@ -1247,7 +1249,7 @@ void checkRacketEnemyCollision() {
 
   if(checkLevelOver()) {
     if(noDamageTakenCurrentLevel) {
-      score = score + 25;
+      score = score + 50;
       specialPower++;
       displayStatus();
     }
@@ -1609,6 +1611,7 @@ void game() {
     gameIsOver();
   }else {
     if(firstTime == false) {
+      score = 0;
       Enemie *enemies = new Enemie;
       firstTime = true;
     }
