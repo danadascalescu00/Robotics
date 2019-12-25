@@ -130,9 +130,9 @@ boolean playerWon = false, gameOver = false, newLevelBegin = false, noDamageTake
 boolean displayed = false, updatedTopPlayersList = false, firstStarship = true;
 int playerPos = 4, noOfEnemies = 12, currentLevel;
 unsigned int level = 1, startingLevel = 1, lives = LIVES, specialPower = 0, enemyCounter = 0;
-const int movementDelay = 100, firedDelay = 300, racketDelay = 15, enemyRacketDelay = 21;
+const int movementDelay = 100, firedDelay = 500, racketDelay = 15, enemyRacketDelay = 21;
 const int noOfRackets = 5, noOfLevels = 5;
-const int enemyCreateDelay = 5000, enemyFiredDelay = 2100, bigbossMovementDelay = 160, bigbossFiredDelay = 3200;
+const int enemyCreateDelay = 5000, enemyFiredDelay = 2100, bigbossMovementDelay = 120, bigbossFiredDelay = 3000;
 int enemyMovementDelay; 
 unsigned long movementTime, firedTime, enemyCreateTime, enemyFiredTime, bigbossFiredTime;
 
@@ -142,13 +142,13 @@ struct Racket {
 }playerRackets[noOfRackets], enemyRackets[noOfRackets], bigbossRackets[noOfRackets];
 
 struct Enemie {
-  int posX, posY, lives = LIVES;
+  int posX, posY;
   boolean created, dead = false, firstTimeShoot = false;
   unsigned long createdTime, movementTime, firedTime;
 };
 
 struct Bigboss {
-  int lives;
+  int lives = 2 * LIVES;
   int posX, posY = 0;
   boolean created = false, dead = false, firstTimeShoot = false;
   unsigned long movementTime, firedTime;
@@ -485,6 +485,8 @@ void displayMenu(unsigned int option) {
 }
 
 void story() {
+  currentLevel = level = startingLevel;
+  enemyCounter = 0; 
   yValue = analogRead(pinY);
   if(yValue < minThreshold) {
     if(joyMovedOy == false) {
@@ -602,16 +604,6 @@ void story() {
   }
 }
 
-void playLoseSong() {
-  for(int note = 0; note < NOTES; note++) {
-        int noteDuration = 500/ loseNoteDuration[note];
-        tone(buzzerPin, loseNotes[note], noteDuration);
-        int pauseBetweenNotes = noteDuration * 1.50;
-        delay(pauseBetweenNotes);
-        noTone(buzzerPin);
-      }
-}
-
 void gameIsOver() {
   if(!updatedTopPlayersList) {
     updatedTopPlayersList = true;
@@ -625,7 +617,13 @@ void gameIsOver() {
       lcd.setCursor(5,1);
       lcd.print("LOSED!");
       loseSound = false;
-      playLoseSong;
+      for(int note = 0; note < NOTES; note++) {
+        int noteDuration = 500/ loseNoteDuration[note];
+        tone(buzzerPin, loseNotes[note], noteDuration);
+        int pauseBetweenNotes = noteDuration * 1.50;
+        delay(pauseBetweenNotes);
+        noTone(buzzerPin);
+      }
     }
     lcd.setCursor(3,0);
     lcd.print("YOU LOSED!");
@@ -636,7 +634,13 @@ void gameIsOver() {
       lcd.setCursor(5,1);
       lcd.print("WON!");
       winSound = false;
-      //finalSong(1.20);
+      for(int note = 0; note < NOTES; note++) {
+        int noteDuration = 500/ loseNoteDuration[note];
+        tone(buzzerPin, loseNotes[note], noteDuration);
+        int pauseBetweenNotes = noteDuration * 1.20;
+        delay(pauseBetweenNotes);
+        noTone(buzzerPin);
+      }
     }
     lcd.setCursor(4,0);
     lcd.print("YOU WON!");
@@ -1102,9 +1106,9 @@ Enemie* generateEnemiesCurrentLevel() {
   noOfEnemies = currentLevelNumberOfEnemies;
   int enemyIncreaseSpeed = 0;
   for(int count = 0; count < currentLevel; count++) {
-    int enemyIncreaseSpeed = 20 * (count + 1);
+    enemyIncreaseSpeed = 22 * (count + 1);
   }
-  enemyMovementDelay = 280 - enemyIncreaseSpeed;
+  enemyMovementDelay = 220 - enemyIncreaseSpeed;
 
   Enemie *enemies = new Enemie[currentLevelNumberOfEnemies];
   for(int i = 0; i < currentLevelNumberOfEnemies; i++) {
