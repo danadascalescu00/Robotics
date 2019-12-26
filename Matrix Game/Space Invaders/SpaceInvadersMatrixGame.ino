@@ -299,7 +299,7 @@ void lcdPrint(char *str) {
 }
 
 void lcdPrintMessage(char* message) {
-  if(millis() > lastShown + 500) {
+  if(millis() > lastShown + 450) {
     lastShown = millis();
     if(message[currMsgBit] == '\0') {
       currMsgBit = 0;        
@@ -1470,7 +1470,7 @@ void checkSpecialRacketCollision() {
            (playerSpecialRackets[i].posX + 1 == enemies[j].posX + 1 and playerSpecialRackets[j].posY == enemies[j].posY + 1) or
            (playerSpecialRackets[i].posX + 1 == enemies[j].posX - 1 and playerSpecialRackets[j].posY == enemies[j].posY - 1)) {
 
-            score = score + 10;
+            score = score + 25;
             lc.setLed(0, enemies[j].posY - 1, enemies[j].posX - 1, false);
             lc.setLed(0, enemies[j].posY, enemies[j].posX, false);
             lc.setLed(0, enemies[j].posY - 1, enemies[j].posX + 1, false);
@@ -1615,6 +1615,7 @@ void checkRacketBigBossCollision() {
             bigBoss.lives--;
             if(bigBoss.lives == 0) {
               gameOver = true;
+              score = score + 50;
               bigBoss.dead = true;
               bigBoss.posX = ENEMY_DESTROYED;
               lc.setLed(0, bigBoss.posY + 1, bigBoss.posX  - 1, false);
@@ -1643,10 +1644,11 @@ void checkSpecialRacketBigBossCollision() {
          (playerSpecialRackets[i].posX + 1 == bigBoss.posX - 1  and playerSpecialRackets[i].posY == bigBoss.posY + 1)or
          (playerSpecialRackets[i].posX + 1 == bigBoss.posX + 1  and playerSpecialRackets[i].posY == bigBoss.posY + 1)) {
 
-          score = score + 10;
+          score = score + 25;
           bigBoss.lives--;
           tone(buzzerPin, boom, 150);
           if(bigBoss.lives == 0) {
+            score = score + 50;
             bigBoss.posX = ENEMY_DESTROYED;
             bigBoss.dead = true;
             gameOver = true;
