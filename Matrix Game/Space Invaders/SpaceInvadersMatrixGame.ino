@@ -114,6 +114,7 @@ boolean buttonPressed = true;
 boolean highScoreFirstLine = false;
 boolean storyDisplayed = false;
 boolean pressedOnce = false;
+boolean switchToLetter = true;
 
 int minThreshold = 300, maxThreshold = 800;
 
@@ -132,7 +133,7 @@ int playerPos = 4, noOfEnemies = 12, currentLevel;
 unsigned int level = 1, startingLevel = 1, lives = LIVES, specialPower = 0, enemyCounter = 0;
 const int movementDelay = 100, firedDelay = 500, racketDelay = 15, enemyRacketDelay = 21;
 const int noOfRackets = 5, noOfLevels = 5;
-const int enemyCreateDelay = 5000, enemyFiredDelay = 2000, bigbossMovementDelay = 120, bigbossFiredDelay = 3000;
+const int enemyCreateDelay = 5000, enemyFiredDelay = 1900, bigbossMovementDelay = 120, bigbossFiredDelay = 3000;
 int enemyMovementDelay; 
 unsigned long movementTime, firedTime, enemyCreateTime, enemyFiredTime, bigbossFiredTime;
 
@@ -699,11 +700,11 @@ void showSettingsOptions(unsigned int count) {
 }
 
 void displaySettings() {
-  if(setState == false) {
+  if(buttonPressed == true) {
     yValue = analogRead(pinY);
     if(yValue < minThreshold) {
       if(joyMovedOy == false) {
-        displacement--;
+        displacement -= 1;
         joyMovedOy = true;
       }
       if(displacement < 1) {
@@ -712,7 +713,7 @@ void displaySettings() {
     }else {
       if(yValue > maxThreshold) {
         if(joyMovedOy == false) {
-          displacement++;
+          displacement += 1;
           joyMovedOy = true;
         }
         if(displacement > 3) {
@@ -723,27 +724,37 @@ void displaySettings() {
       }
     }
     if(joyMovedOy == true) {
-      lcd.clear();  
+      lcd.clear();
     }
+  }
 
-    showSettingsOptions(displacement);
+  switch(displacement) {
+    case 1: {
+      lcd.setCursor(0,0);
+      lcd.print(">Start level: ");
+      lcd.setCursor(13,0);
+      lcd.print(startingLevel);
+      lcd.setCursor(0,1);
+      lcd.print(" Player: ");
+      lcd.setCursor(9,1);
+      lcd.print(Name);
 
-    int switchValue = digitalRead(pinSW);
-    if(switchValue == LOW) {
-      setState = true;
-      joyMovedOy = false;
-      joyMovedOx = false;
-      letter = 0;
-      pos = 0;
-    }
-  }else{
-    switch(displacement) {
-      case 1: {
-        //setting the level from which the player will start
+      // scroll arrow:
+      lcd.setCursor(15,0);
+      lcd.write(REVERSE_ARROW);
+
+      int switchValue = digitalRead(pinSW);
+      if(switchValue == LOW) {
+        setState = !setState;
+      }
+
+      if(setState == true) {
+        // Set the starting level:
+        buttonPressed = false;
         xValue = analogRead(pinX);
         if(xValue < minThreshold) {
           if(joyMovedOx == false) {
-            startingLevel--;
+            startingLevel -= 1;
             joyMovedOx = true;
           }
           if(startingLevel < 1) {
@@ -752,33 +763,142 @@ void displaySettings() {
         }else {
           if(xValue > maxThreshold) {
             if(joyMovedOx == false) {
-              startingLevel++;
+              startingLevel += 1;
               joyMovedOx = true;
             }
             if(startingLevel > 5) {
               startingLevel = 5;
             }
-          }else {
+          }else{
             joyMovedOx = false;
           }
         }
         
-        showSettingsOptions(displacement);
-        int switchVal = digitalRead(pinSW);
-        if(switchVal == LOW) {
-          setState = false;
-          setLetter = true;
-          joyMovedOy = false;
-          joyMovedOx = false;                               
+        lcd.setCursor(13,0);
+        lcd.print(startingLevel);
+  
+        int switchValue = digitalRead(pinSW);
+        if(switchValue == LOW) {
+          buttonPressed = true;
         }
-
-        break;
       }
-      case 2: {
-        showSettingsOptions(displacement);
-        break;
-      } 
+    break;
+   }
+   case 2: {
+    lcd.setCursor(0,0);
+    lcd.print("Start level: ");
+    lcd.setCursor(13,0);
+    lcd.print(startingLevel);
+    lcd.setCursor(0,1);
+    lcd.print(">Player: ");
+    lcd.setCursor(9,1);
+    if(firstTime == false) {
+      lcd.print("_______");
+      firstTime = true;
+    }else{
+      lcd.print(Name);
     }
+    // scroll arrow:
+    lcd.setCursor(15,0);
+    lcd.write(REVERSE_ARROW);
+
+    int switchValue = digitalRead(pinSW);
+    if(switchValue == LOW) {
+      setState = !setState;
+    }
+    
+    if(setState == true) {
+      // Set player's name:
+      buttonPressed = false;
+      
+      int switchVal = digitalRead(pinSW);
+      if(switchVal == LOW and buttonPressed == true) {
+        buttonPressed = true;
+        setState = false;
+      }else{
+        if(switchVal == LOW and buttonPressed == false) {
+          switchToLetter = true;
+          buttonPressed = true;
+          setState = true;
+          }
+      }
+      
+      xValue = analogRead(pinX);
+      if(xValue < minThreshold) {
+        if(joyMovedOx == false) {
+          pos -= 1;
+          joyMovedOx = true;
+        }
+        if(pos < 0) {
+          pos = 0;
+        }
+      }else{
+        if(xValue > maxThreshold) {
+          if(joyMovedOx == false) {
+            pos += 1;
+            joyMovedOx = true; 
+          }
+          if(pos > 7) {
+            pos = 7;
+          }
+        }else{
+          joyMovedOx = false;
+        }
+       }
+
+        yValue = analogRead(pinY);
+        if(yValue < minThreshold) {
+          if(joyMovedOy == false) {
+            letter -= 1;
+            joyMovedOy = true;
+          }
+          if(letter < 0) {
+            letter = 0;
+          }
+        }else{
+          if(yValue > maxThreshold) {
+            if(joyMovedOy == false) {
+              letter += 1;
+              joyMovedOy = true; 
+            }
+            if(letter > 26) {
+              letter = 26;
+            }
+          }else{
+            joyMovedOy = false;
+          }
+        }
+        
+        char let;
+        if(joyMovedOy == true) {
+          if(letter == 26) {
+            let = ' ';
+          }else{
+            let = 'A' + letter;
+          }
+          lcd.print(let);
+          Name[pos] = let;
+        }
+      
+      if(switchToLetter == true) {
+        lcd.setCursor(9+pos,1);
+      }  
+    }
+    break;
+   }
+   case 3: {
+      lcd.setCursor(0,1);
+      lcd.print("               ");
+      lcd.setCursor(0,0);
+      lcdPrintMessage(endMsg);
+
+      // scroll arrow:
+      lcd.setCursor(15,1);
+      lcd.write(ARROW);
+      
+      redButtonPressed();
+      break;
+    }  
   }
 }
 
@@ -1249,7 +1369,7 @@ void checkRacketEnemyCollision() {
 
   if(checkLevelOver()) {
     if(noDamageTakenCurrentLevel) {
-      score = score + 25;
+      score = score + 100;
       specialPower++;
       displayStatus();
     }
@@ -1349,7 +1469,7 @@ void checkSpecialRacketCollision() {
            (playerSpecialRackets[i].posX + 1 == enemies[j].posX + 1 and playerSpecialRackets[j].posY == enemies[j].posY + 1) or
            (playerSpecialRackets[i].posX + 1 == enemies[j].posX - 1 and playerSpecialRackets[j].posY == enemies[j].posY - 1)) {
 
-            score = score + 5;
+            score = score + 10;
             lc.setLed(0, enemies[j].posY - 1, enemies[j].posX - 1, false);
             lc.setLed(0, enemies[j].posY, enemies[j].posX, false);
             lc.setLed(0, enemies[j].posY - 1, enemies[j].posX + 1, false);
