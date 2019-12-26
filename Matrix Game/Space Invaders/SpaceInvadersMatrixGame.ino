@@ -1266,7 +1266,7 @@ void checkRacketPlayerCollision() {
     if(enemyRackets[i].posX != RACKET_OUT_OF_RANGE) {
       if((enemyRackets[i].posX == playerPos and enemyRackets[i].posY == 6) or
           (enemyRackets[i].posX == playerPos - 1 and enemyRackets[i].posY == 7) or
-          (enemyRackets[i].posX == playerPos and enemyRackets[i].posY == 6)) {
+          (enemyRackets[i].posX == playerPos + 1 and enemyRackets[i].posY == 6)) {
             lives--;
             enemyRackets[i].posX = RACKET_OUT_OF_RANGE;
             noDamageTakenCurrentLevel = false;
@@ -1441,7 +1441,7 @@ void showBigBoss() {
   if(bigBoss.created == false) {
     bigBoss.posX = random(1,6);
     bigBoss.created = true;
-    bigBoss.lives = LIVES;
+    bigBoss.lives = 2 * LIVES;
   }
   lc.setLed(0, bigBoss.posY, bigBoss.posX - 1, true);
   lc.setLed(0, bigBoss.posY + 1, bigBoss.posX - 1, true);
@@ -1503,6 +1503,7 @@ void checkRacketBigBossCollision() {
               lc.setLed(0, bigBoss.posY + 1, bigBoss.posX + 1, false);
             }
             tone(buzzerPin, boom, 125);
+            playerRackets[i].posX = RACKET_OUT_OF_RANGE;
         }
       }
   }
