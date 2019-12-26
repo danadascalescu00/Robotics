@@ -11,7 +11,7 @@ The difficulty of the game will increase with each level(enmies starships will i
 ## Game specifications
 
 ### Sound
-Sounds plays an important role in the user experience by adding another layer of depth; making fo a more realistic experience. To acomplish this I used a passive buzzer - Notes [pitches](Pitches.h) 
+Sounds plays an important role in the user experience by adding another layer of depth; making fo a more realistic experience. To acomplish this I used a passive buzzer - Notes [pitches](pitches.h) 
 
 
 **Required Items:**
