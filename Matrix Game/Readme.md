@@ -10,8 +10,18 @@ The difficulty of the game will increase with each level(enmies starships will i
 
 ## Game specifications
 
+### Scoring
+* Player's score depends on the number of enemy shipes destroyed. Each player receives a bonus if he can reache the next level without damage caused by the enemy.
+* The last level, when the big boss will appear, brings another chances of receiving bonus score.
+* The first three best scores are saved along with the player's name in the *EEPROM*.
+
 ### Sound
 Sounds plays an important role in the user experience by adding another layer of depth; making fo a more realistic experience. To acomplish this I used a passive buzzer - Notes [pitches](https://github.com/danadascalescu00/Robotics/blob/master/Matrix%20Game/Space%20Invaders/pitches.h) 
+
+## Input/Output
+* The joystick is used to navigate in the menu(by moving with the xAxis or yAxis). Each chose is made by pressing the switch of the joystick. In the game the joystick is used to move the player's starship and, also, to fire rackets.
+* The pushbutton is ued for exiting the options choosed. In game is used to activate a different firing mechanism.
+* The LCD and the led matrix are used for the interface;
 
 
 **Required Items:**
