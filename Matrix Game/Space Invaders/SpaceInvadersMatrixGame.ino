@@ -132,7 +132,7 @@ int playerPos = 4, noOfEnemies = 12, currentLevel;
 unsigned int level = 1, startingLevel = 1, lives = LIVES, specialPower = 0, enemyCounter = 0;
 const int movementDelay = 100, firedDelay = 500, racketDelay = 15, enemyRacketDelay = 21;
 const int noOfRackets = 5, noOfLevels = 5;
-const int enemyCreateDelay = 5000, enemyFiredDelay = 2100, bigbossMovementDelay = 120, bigbossFiredDelay = 3000;
+const int enemyCreateDelay = 5000, enemyFiredDelay = 2000, bigbossMovementDelay = 120, bigbossFiredDelay = 3000;
 int enemyMovementDelay; 
 unsigned long movementTime, firedTime, enemyCreateTime, enemyFiredTime, bigbossFiredTime;
 
