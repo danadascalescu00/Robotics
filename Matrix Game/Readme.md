@@ -11,7 +11,7 @@ The difficulty of the game will increase with each level(enmies starships will i
 ## Game specifications
 
 ### Sound
-Sounds plays an important role in the user experience by adding another layer of depth; making fo a more realistic experience. To acomplish this I used a passive buzzer - Notes [pitches](pitches.h) 
+Sounds plays an important role in the user experience by adding another layer of depth; making fo a more realistic experience. To acomplish this I used a passive buzzer - Notes [pitches](https://github.com/danadascalescu00/Robotics/blob/master/Matrix%20Game/Space%20Invaders/pitches.h) 
 
 
 **Required Items:**
