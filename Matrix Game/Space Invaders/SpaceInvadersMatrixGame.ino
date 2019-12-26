@@ -1417,6 +1417,7 @@ boolean checkGameOver() {
     return true;
   }
   if(bigBoss.dead == true) {
+    score = score + 50;
     playerWon = true;
     return true;
   }
