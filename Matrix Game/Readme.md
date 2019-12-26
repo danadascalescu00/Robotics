@@ -1,4 +1,4 @@
-# Space Invaders LED Matrix
+# Space Invaders LED Matrix Game
 
 ## About the game
 Space Invaders Retro Game is a LED Matrix Arduino game which expands the original Space Invaders and Chicken Invaders. 
@@ -11,7 +11,7 @@ The difficulty of the game will increase with each level(enmies starships will i
 ## Game specifications
 
 ### Sound
-Sounds plays an important role in the user experience by adding another layer of depth; makink fo a more realistic experience
+Sounds plays an important role in the user experience by adding another layer of depth; making fo a more realistic experience. To acomplish this I used a passive buzzer - Notes [pitches](Pitches.h) 
 
 
 **Required Items:**
