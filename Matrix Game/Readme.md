@@ -16,7 +16,7 @@ The difficulty of the game will increase with each level(enmies starships will i
 * The first three best scores are saved along with the player's name in the *EEPROM*.
 
 ### Sound
-Sounds plays an important role in the user experience by adding another layer of depth; making fo a more realistic experience. To acomplish this I used a passive buzzer - Notes [pitches](https://github.com/danadascalescu00/Robotics/blob/master/Matrix%20Game/Space%20Invaders/pitches.h) 
+Sounds plays an important role in the user experience by adding another layer of depth; making for a more realistic experience. To acomplish this I used a passive buzzer - Notes [pitches](https://github.com/danadascalescu00/Robotics/blob/master/Matrix%20Game/Space%20Invaders/pitches.h) 
 
 ### Input/Output
 * The joystick is used to navigate in the menu(by moving with the xAxis or yAxis). Each chose is made by pressing the switch of the joystick. In the game the joystick is used to move the player's starship and, also, to fire rackets.
