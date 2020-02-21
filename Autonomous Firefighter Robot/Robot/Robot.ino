@@ -9,17 +9,24 @@ void setup() {
   sirenSetup();
   flameSensorSetup();
   Serial.begin(9600);
-//  sirenSound();
 }
 
 int leftSensorValue, rightSensorValue;
 
 void loop() {
-    getSensorReadings(leftSensorValue, rightSensorValue);
-    Serial.print(leftSensorValue); Serial.print(' '); Serial.println(rightSensorValue);
-//  debug_printDistances();
-//  motorBottLeft.run(FORWARD);
-//  motorBottRight.run(FORWARD);
-//  motorFrontRight.run(FORWARD);
-//  motorFrontLeft.run(FORWARD);
+  if (getDistance(FRONT_US) < frontMinimum) {
+    if (getDistance(LEFT_US) < leftMinimum) {
+      if (getDistance(RIGHT_US) < rightMinimum) {
+        goBackwards();
+      } else {
+        rotateVehicle(turnAngle);
+        goForward();
+      }
+    } else {
+      rotateVehicle(-turnAngle);
+      goForward();
+    }
+  } else {
+    goForward();
+  }
 }

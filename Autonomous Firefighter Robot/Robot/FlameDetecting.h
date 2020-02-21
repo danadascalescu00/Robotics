@@ -1,7 +1,7 @@
 const uint8_t flameSensorLeft = A9;
 const uint8_t flameSensorRight = A8;
-const int sensorMin = 0;
-const int sensorMax = 1023;
+const uint16_t sensorMin = 0;
+const uint16_t sensorMax = 1023;
 
 void flameSensorSetup() {
 

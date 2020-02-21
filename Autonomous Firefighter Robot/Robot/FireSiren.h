@@ -1,6 +1,10 @@
 const uint8_t buzzerPin = 45;
 const int soundDuration = 50, periodDuration = 40;
 unsigned long lastPeriodStart;
+
+void sirenSetup() {
+  pinMode(buzzerPin, OUTPUT);
+}
  
 void effects() {
   for(int hz = 440; hz < 1000; hz++) {

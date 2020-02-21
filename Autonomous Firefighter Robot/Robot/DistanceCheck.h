@@ -7,6 +7,10 @@ struct ultrasonic {
 #define FRONT_US 1
 #define RIGHT_US 2
 
+const uint8_t leftMinimum = 25;
+const uint8_t frontMinimum = 25;
+const uint8_t rightMinimum = 25;
+
 int getDistance(int us) {
   digitalWrite(usSensor[us].trigPin, HIGH);
   delayMicroseconds(10);
