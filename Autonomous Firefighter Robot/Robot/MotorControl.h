@@ -12,6 +12,38 @@ void DCMotorSetup() {
   motorFrontLeft.setSpeed(200);
 }
 
+bool vehicleMoving = false;
+
+void goForward() {
+  if (!vehicleMoving) {
+    vehicleMoving = true;
+    motorBottLeft.run(FORWARD);
+    motorBottRight.run(FORWARD);
+    motorFrontRight.run(FORWARD);
+    motorFrontLeft.run(FORWARD);
+  }
+}
+
+void goBackwards() {
+  if (!vehicleMoving) {
+    vehicleMoving = true;
+    motorBottLeft.run(BACKWARD);
+    motorBottRight.run(BACKWARD);
+    motorFrontRight.run(BACKWARD);
+    motorFrontLeft.run(BACKWARD);
+  }
+}
+
+void fullStop() {
+  if (vehicleMoving) {
+    vehicleMoving = false;
+    motorBottLeft.run(RELEASE);
+    motorBottRight.run(RELEASE);
+    motorFrontRight.run(RELEASE);
+    motorFrontLeft.run(RELEASE);
+  }
+}
+
 uint64_t fullturn = 10000;
 
 void rotateBody(int angle) {
