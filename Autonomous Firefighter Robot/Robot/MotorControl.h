@@ -1,4 +1,9 @@
+#ifndef MOTORCONTROL_INCLUDED
+#define MOTORCONTROL_INCLUDED
+
 #include <AFMotor.h>
+#include "FlameDetecting.h"
+#include "DistanceCheck.h"
 
 AF_DCMotor motorBottLeft(1, MOTOR12_2KHZ); // create motor #1, 64KHz pwm
 AF_DCMotor motorBottRight(2, MOTOR12_2KHZ); // create motor #2, 64KHz
@@ -14,11 +19,11 @@ void DCMotorSetup() {
   motorFrontLeft.setSpeed(runningSpeed);
 }
 
-bool vehicleMoving = false;
+int8_t currentDirection = 0;
 
 void goForward() {
-  if (!vehicleMoving) {
-    vehicleMoving = true;
+  if (!currentDirection) {
+    currentDirection = 1;
     motorBottLeft.run(FORWARD);
     motorBottRight.run(FORWARD);
     motorFrontRight.run(FORWARD);
@@ -27,8 +32,8 @@ void goForward() {
 }
 
 void goBackwards() {
-  if (!vehicleMoving) {
-    vehicleMoving = true;
+  if (!currentDirection) {
+    currentDirection = -1;
     motorBottLeft.run(BACKWARD);
     motorBottRight.run(BACKWARD);
     motorFrontRight.run(BACKWARD);
@@ -37,8 +42,8 @@ void goBackwards() {
 }
 
 void fullStop() {
-  if (vehicleMoving) {
-    vehicleMoving = false;
+  if (currentDirection) {
+    currentDirection = 0;
     motorBottLeft.run(RELEASE);
     motorBottRight.run(RELEASE);
     motorFrontRight.run(RELEASE);
@@ -51,6 +56,7 @@ const uint8_t turnAngle = 25;
 bool isRotating = false;
 
 void rotateVehicle(int angle) {
+//  Serial.println(angle);
   if (!isRotating) {
     isRotating = true;
     fullStop();
@@ -80,3 +86,52 @@ void rotateVehicle(int angle) {
     isRotating = false;
   }
 }
+
+void normalMovement() {
+  if (currentDirection == -1) {
+    if (getDistance(LEFT_US) < leftMinimum) {
+      if (getDistance(RIGHT_US) < rightMinimum) {
+        goBackwards();
+      } else {
+        rotateVehicle(turnAngle);
+        goForward();
+      }
+    } else {
+      rotateVehicle(-turnAngle);
+      goForward();
+    }
+  } else {
+    if (getDistance(FRONT_US) < frontMinimum) {
+      if (getDistance(LEFT_US) < leftMinimum) {
+        if (getDistance(RIGHT_US) < rightMinimum) {
+          goBackwards();
+        } else {
+          rotateVehicle(turnAngle);
+          goForward();
+        }
+      } else {
+        rotateVehicle(-turnAngle);
+        goForward();
+      }
+    } else {
+      goForward();
+    }
+  }
+}
+
+void emergencyMovement() {
+  int leftValue, rightValue;
+  getSensorReadings(leftValue, rightValue);
+  if (leftValue == rightValue) {
+    fullStop();
+    //..............
+  } else {
+    if (leftValue < rightValue) {
+      rotateVehicle(-turnAngle);
+    } else {
+      rotateVehicle(turnAngle);
+    }
+  }
+}
+
+#endif

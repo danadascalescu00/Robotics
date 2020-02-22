@@ -1,4 +1,6 @@
-// defines pins numbers
+#ifndef DISTANCECHECK_INCLUDED
+#define DISTANCECHECK_INCLUDED
+
 struct ultrasonic {
   uint8_t trigPin, echoPin;
 } usSensor[3] = {{23, 22}, {39, 37}, {52, 53}};
@@ -8,7 +10,7 @@ struct ultrasonic {
 #define RIGHT_US 2
 
 const uint8_t leftMinimum = 25;
-const uint8_t frontMinimum = 25;
+const uint8_t frontMinimum = 40;
 const uint8_t rightMinimum = 25;
 
 int getDistance(int us) {
@@ -29,8 +31,10 @@ void debug_printDistances() {
 
 void usSensorSetup() {
   for(int i = 0; i < 3; ++i) {
-      pinMode(usSensor[i].trigPin, OUTPUT); // Sets the trigPin as an Output
-      pinMode(usSensor[i].echoPin, INPUT); // Sets the echoPin as an Input
+      pinMode(usSensor[i].trigPin, OUTPUT);
+      pinMode(usSensor[i].echoPin, INPUT);
       digitalWrite(usSensor[i].trigPin, LOW);
   }
 }
+
+#endif
