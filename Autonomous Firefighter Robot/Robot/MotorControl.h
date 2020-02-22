@@ -4,11 +4,12 @@
 #include <AFMotor.h>
 #include "FlameDetecting.h"
 #include "DistanceCheck.h"
+#include "WaterControl.h"
 
-AF_DCMotor motorBottLeft(1, MOTOR12_2KHZ); // create motor #1, 64KHz pwm
-AF_DCMotor motorBottRight(2, MOTOR12_2KHZ); // create motor #2, 64KHz
-AF_DCMotor motorFrontRight(3, MOTOR12_2KHZ); // create motor #3, 64KHz
-AF_DCMotor motorFrontLeft(4, MOTOR12_2KHZ); // create motor #4, 64KHz
+AF_DCMotor motorBottLeft(1, MOTOR12_2KHZ);
+AF_DCMotor motorBottRight(2, MOTOR12_2KHZ);
+AF_DCMotor motorFrontRight(3, MOTOR12_2KHZ);
+AF_DCMotor motorFrontLeft(4, MOTOR12_2KHZ);
 
 const uint8_t runningSpeed = 200;
 
@@ -124,7 +125,7 @@ void emergencyMovement() {
   getSensorReadings(leftValue, rightValue);
   if (leftValue == rightValue) {
     fullStop();
-    //..............
+    sprayWater();
   } else {
     if (leftValue < rightValue) {
       rotateVehicle(-turnAngle);

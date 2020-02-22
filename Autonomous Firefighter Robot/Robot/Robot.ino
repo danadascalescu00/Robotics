@@ -14,7 +14,7 @@ void setup() {
 }
 
 void loop() {
-  Serial.println(readWaterLevel());
+//  Serial.println(readWaterLevel());
 //  debug_printDistances();
 //  if (checkForFlame()) {
 //    playSiren();
@@ -24,4 +24,5 @@ void loop() {
 //    resetSiren();
 //    normalMovement();
 //  }
+  verticalServo.write(134);
 }
