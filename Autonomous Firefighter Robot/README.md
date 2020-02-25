@@ -10,13 +10,17 @@ University of Bucharest.
 
 
 ### Hardware Specifications:
-*
-*
-*
-*
-*
-*
-*
-*
-*
-*
+* Arduino Mega 2560 microcontroller 
+* Wires
+* 4 X Wheel
+* 4 x Ultrasonic Distance Sensor - HC-SR04
+* 4 x DC Motor
+* Servo Motor
+* Micro Servor
+* Water pump 3-6V 
+* 2 x Infrared sensor module LM393
+* Battery 9V
+* 3 x Battery 7,4 V
+* MotorDriver Shield 239D
+* 5V relay module with Status Led, diode and transistor
+* Buzzer
