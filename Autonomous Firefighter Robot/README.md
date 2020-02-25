@@ -40,7 +40,7 @@ University of Bucharest.
 * Buzzer
 * Switch on|off button
 
-#### 3D Models: [models](/3D Models)
+#### 3D Models: [models](https://github.com/danadascalescu00/Robotics/tree/master/Autonomous%20Firefighter%20Robot/3D%20Models)
 
 
 ### Tehnical information
