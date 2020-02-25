@@ -40,7 +40,7 @@ University of Bucharest.
 * Buzzer
 * Switch on|off button
 
-#### 3D Models: [models](3d-models)
+#### 3D Models: [models](/3D Models)
 
 
 ### Tehnical information
