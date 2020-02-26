@@ -17,11 +17,10 @@ void setup() {
 void loop() {
   if (checkForFlame()) {
     playSiren();
-    digitalWrite(relayPin, HIGH);
     emergencyMovement();
   }
   else {
     resetSiren();
     normalMovement();
-}
+  }
 }
