@@ -58,7 +58,7 @@ void sprayWater() {
     lastWaterPumpStart = millis();
     if(millis() - lastWaterPumpStart >= waterFlowDuration) {
       spraying = false;
-      //digitalWrite(relayPin, LOW);
+      digitalWrite(relayPin, LOW);
     }
   }
 }
