@@ -15,11 +15,13 @@ University of Bucharest.
 &nbsp; &nbsp; &nbsp; In an event of a fire breakout, fire spreads rapidly if is not controlled and, in case of a gas leakage there even may be an explosion, so firefighters are constantly at a risk of losing their life. In order to overcome this issue, save the life of our heros, our autonomous firefighter robot comes to rescue. 
 
 ### Features:
-&nbsp; Autonomous firefighter robot, which is able to avoide obstacle and instantly, flame detection which will enable the emergency mode(self-drive until he arives in fron of the flame). After the vehicle is at athe right position it will start the water pump mechanism which consit from a mini-water pump, a 5V relay module with Status Led, diode and transistor, one servo and one microservo( the servos control the movement of the pump).
+&nbsp; Autonomous firefighter robot, which is able to avoide obstacle and, instantly, detects fire and activate enable the emergency mode(self-drive until he arives in front of the flame). After the vehicle is at at the right position it will start the water pump mechanism which consit from a mini-water pump, a 5V relay module with Status Led, diode and transistor, one servo and one microservo( the servos control the movement of the pump).
+#### To do:
+Alert messages using the wi-fi module.
 
 ##### Presentation video: https://www.youtube.com/watch?v=FE0DiZv4Mc4&feature=youtu.be
 
-### Hardware Specifications and 3D printing models
+### Hardware Specifications and Technical Drawings for 3D Printing:
 
 #### Components:
 * Arduino Mega 2560 microcontroller 
@@ -46,10 +48,42 @@ University of Bucharest.
 ### Tehnical information
 <em>Ultrasonic Distance Sensor - HC-SR04 </em>
  
-&ensp; This sensor provides 2cm to 400cm of non-contact measurement functionality with a ranging accuracy that can reach up to 3mm. Each HC-SR04 module includes an ultrasonic transmitter, a receiver and a control circuit. 
+&ensp; This sensor provides 2cm to 400cm of non-contact measurement functionality with a ranging accuracy that can reach up to 3mm. Each HC-SR04 module includes an ultrasonic transmitter, a receiver and a control circuit.<br>
+
+**Determine the distance:** We use thre distance servo for detecting objects and find the distance till obstacles(obstacles avoiding mechanism).
 
 **Determine water level from the tank:** We used the ultrasonic distance sensor HC-SR04 which sends the sound waves in the water tank and detects reflection of sound waves that is ECHO. The system measures the time between triggered sound wave and received ECHO, and calculates the distance(d) to the water surface using given formula: <br>
  &emsp; &emsp; &emsp; &emsp; &emsp; &emsp; &emsp; &emsp; &emsp; &emsp; &emsp; &emsp; &emsp; &emsp; &emsp; &emsp; &emsp; &emsp; &emsp; &emsp; &emsp; ![picture](Images/CodeCogsEqn.png) <br>
   &emsp; &emsp; &emsp; &emsp; &emsp;where Δt is the travel distance time and c the speed of sound (distance travel per unit time by a sound wave as it propagates through an elastic medium - at approximatively 20 °C is 343 meters per second). <br>
   As we know the height of water tank we can calculate the water level by subtracting resulting distance measure with the ultrasonic sensor from total length of tank. 
+  
+  <em>Servo motors</em> <br>
+  &ensp; For the water gun mechanism what we needed was to have motors that can provide relatively precise motion in a specific range. In order to achieve this we could have used servo motors or stepper motors. We choosed to use a servo motors considering the following facts: less consumption of energy which was important in our case and that servo motors are more capable of accelerating loads than steppers. <br>
+  
+ &ensp; We choose an <em> Arduino Mega </em> because we are interested to expand the design and add some moore features.
+
+<em>Buzzer</em> <br>
+&ensp; Sounds play an important role because is one of the features which is able to announce people around that a fire broke out. <br>
+``` void playSiren() {
+  if (ascending) {
+    if (hz < 1000) {
+      if (millis() - lastSiren >= 5) {
+        lastSiren = millis();
+        tone(buzzerPin, hz++, sirenDelay);
+      }
+    } else {
+      ascending = false;
+    }
+  } else {
+    if (hz >= 440) {
+      if (millis() - lastSiren >= 5) {
+        lastSiren = millis();
+        tone(buzzerPin, hz--, sirenDelay);
+      }
+    } else {
+      ascending = true;
+    }
+  }
+}
+```
  
