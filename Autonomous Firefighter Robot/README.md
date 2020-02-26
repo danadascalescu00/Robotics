@@ -5,7 +5,7 @@ University of Bucharest.
 ## Table of contents
 * [About the project](#about-the-project)
 * [Features](#features)
-* [Hardware Specifications and 3D printing models](#hardware-specifications-and-3d-printing-models)
+* [Hardware Specifications and Technical Drawings for 3D printing](#hardware-specifications-and-technical-drawings-for-3d-printing)
 * [Tehnical information](#tehnical-information)
 
 
@@ -14,14 +14,14 @@ University of Bucharest.
 
 &nbsp; &nbsp; &nbsp; In an event of a fire breakout, fire spreads rapidly if is not controlled and, in case of a gas leakage there even may be an explosion, so firefighters are constantly at a risk of losing their life. In order to overcome this issue, save the life of our heros, our autonomous firefighter robot comes to rescue. 
 
-### Features:
+## Features:
 &nbsp; Autonomous firefighter robot, which is able to avoide obstacle and, instantly, detects fire and activate enable the emergency mode(self-drive until he arives in front of the flame). After the vehicle is at at the right position it will start the water pump mechanism which consit from a mini-water pump, a 5V relay module with Status Led, diode and transistor, one servo and one microservo( the servos control the movement of the pump).
 #### To do:
 Alert messages using the wi-fi module.
 
 ##### Presentation video: https://www.youtube.com/watch?v=FE0DiZv4Mc4&feature=youtu.be
 
-### Hardware Specifications and Technical Drawings for 3D Printing:
+## Hardware Specifications and Technical Drawings for 3D Printing:
 
 #### Components:
 * Arduino Mega 2560 microcontroller 
@@ -45,7 +45,7 @@ Alert messages using the wi-fi module.
 ![picture](Images/wpdesign.jfif)
 
 
-### Tehnical information
+## Tehnical information
 <em>Ultrasonic Distance Sensor - HC-SR04 </em>
  
 &ensp; This sensor provides 2cm to 400cm of non-contact measurement functionality with a ranging accuracy that can reach up to 3mm. Each HC-SR04 module includes an ultrasonic transmitter, a receiver and a control circuit.<br>
@@ -58,7 +58,7 @@ Alert messages using the wi-fi module.
   As we know the height of water tank we can calculate the water level by subtracting resulting distance measure with the ultrasonic sensor from total length of tank. 
   
   <em>Servo motors</em> <br>
-  &ensp; For the water gun mechanism what we needed was to have motors that can provide relatively precise motion in a specific range. In order to achieve this we could have used servo motors or stepper motors. We choosed to use a servo motors considering the following facts: less consumption of energy which was important in our case and that servo motors are more capable of accelerating loads than steppers. <br>
+  &ensp; For the water gun mechanism what we needed was to have motors that can provide relatively precise motion in a specific range. In order to achieve this we could have used servo motors or stepper motors. We choosed to use a servo motors and a micro sevo considering the following facts: less consumption of energy which was important in our case and that servo motors are more capable of accelerating loads than steppers. <br>
   
  &ensp; We choose an <em> Arduino Mega </em> because we are interested to expand the design and add some moore features.
 
