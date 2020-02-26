@@ -47,3 +47,5 @@ University of Bucharest.
 
 
 ### Tehnical information
+
+&ensp; **Determine water level from the tank**: We used the ultrasonic distance sensor HC-SR04 which sends the sound waves in the water tank and detects reflection of sound waves that is ECHO. The system measures the time between triggered sound wave and received ECHO, and calculates the distance(d) to the water surface using given formula: 
