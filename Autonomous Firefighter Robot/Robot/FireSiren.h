@@ -26,7 +26,7 @@ bool ascending = true;
 
 // This function will be used only  one time in the setup, so the delay() won't interference with the functionality of the program
 void playSiren() {
-  Serial.println(hz);
+  //Serial.println(hz);
   if (ascending) {
     if (hz < 1000) {
       if (millis() - lastSiren >= 5) {

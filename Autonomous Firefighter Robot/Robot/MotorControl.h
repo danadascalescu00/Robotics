@@ -123,11 +123,12 @@ void normalMovement() {
 void emergencyMovement() {
   int leftValue, rightValue;
   getSensorReadings(leftValue, rightValue);
-  if (leftValue == rightValue) {
+  Serial.print(leftValue); Serial.print(' '); Serial.println(rightValue);
+  if (leftValue < 2 && rightValue < 2) {
     fullStop();
     sprayWater();
   } else {
-    if (leftValue < rightValue) {
+    if (leftValue < 2) {
       rotateVehicle(-turnAngle);
     } else {
       rotateVehicle(turnAngle);

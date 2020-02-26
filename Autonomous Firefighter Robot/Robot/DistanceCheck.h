@@ -24,9 +24,6 @@ void debug_printDistances() {
   int leftDistance = getDistance(LEFT_US);
   int frontDistance = getDistance(FRONT_US);
   int rightDistance = getDistance(RIGHT_US);
-  Serial.print("Left distance: "); Serial.print(leftDistance); Serial.print("; ");
-  Serial.print("Front distance: "); Serial.print(frontDistance); Serial.print("; ");
-  Serial.print("Right distance: "); Serial.println(rightDistance);
 }
 
 void usSensorSetup() {
