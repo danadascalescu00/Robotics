@@ -44,7 +44,7 @@ University of Bucharest.
 
 
 ### Tehnical information
-<em>4 x Ultrasonic Distance Sensor - HC-SR04 </em>
+<em>Ultrasonic Distance Sensor - HC-SR04 </em>
  
 &ensp; This sensor provides 2cm to 400cm of non-contact measurement functionality with a ranging accuracy that can reach up to 3mm. Each HC-SR04 module includes an ultrasonic transmitter, a receiver and a control circuit. 
 
