@@ -17,9 +17,10 @@ University of Bucharest.
 
 ### Getting started
 
-### Features
+### Features:
+&nbsp; Autonomous firefighter robot, which is able to avoide obstacle and instantly, flame detection which will enable the emergency mode(self-drive until he arives in fron of the flame). After the vehicle is at athe right position it will start the water pump mechanism which consit from a mini-water pump, a 5V relay module with Status Led, diode and transistor, one servo and one microservo( the servos control the movement of the pump).
 
-##### Presentation video: 
+##### Presentation video: https://www.youtube.com/watch?v=FE0DiZv4Mc4&feature=youtu.be
 
 ### Hardware Specifications and 3D printing models
 
