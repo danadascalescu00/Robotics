@@ -123,7 +123,6 @@ void normalMovement() {
 void emergencyMovement() {
   int leftValue, rightValue;
   getSensorReadings(leftValue, rightValue);
-  Serial.print(leftValue); Serial.print(' '); Serial.println(rightValue);
   if (leftValue < 2 && rightValue < 2) {
     fullStop();
     sprayWater();
