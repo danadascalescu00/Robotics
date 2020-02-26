@@ -41,6 +41,7 @@ University of Bucharest.
 * Switch on|off button
 
 #### 3D Models: [models](https://github.com/danadascalescu00/Robotics/tree/master/Autonomous%20Firefighter%20Robot/3D%20Models)
+![picture](Images/wpdrawing.jpeg)
 
 
 ### Tehnical information
