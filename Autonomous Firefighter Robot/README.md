@@ -15,7 +15,7 @@ University of Bucharest.
 &nbsp; &nbsp; &nbsp; In an event of a fire breakout, fire spreads rapidly if is not controlled and, in case of a gas leakage there even may be an explosion, so firefighters are constantly at a risk of losing their life. In order to overcome this issue, save the life of our heros, our autonomous firefighter robot comes to rescue. 
 
 ## Features:
-&nbsp; Autonomous firefighter robot, which is able to avoide obstacle and, instantly, detects fire and activate the emergency mode(self-drive until he arives in front of the flame). After the vehicle is at at the right position it will start the water pump mechanism which consit from a mini-water pump, a 5V relay module with Status Led, diode and transistor, one servo and one microservo( the servos control the movement of the pump).
+&nbsp;  Autonomous firefighter robot, which is able to avoide obstacle and, instantly, detects fire, sends an alert message and activate the emergency mode(self-drive until it reaches the flame and start the water pump mechanism). The water pump mechanism consit from a mini-water pump, a 5V relay module with Status Led, diode and transistor, one servo and one microservo( the servos control the movement of the pump).
 #### To do:
 Alert messages using the wi-fi module.
 
