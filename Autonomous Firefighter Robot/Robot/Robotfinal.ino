@@ -10,7 +10,6 @@ void setup() {
   usSensorSetup();
   DCMotorSetup();
   sirenSetup();
-  flameSensorSetup();
   waterSetup();  
 }
 
