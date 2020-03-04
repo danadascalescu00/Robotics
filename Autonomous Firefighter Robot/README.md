@@ -59,6 +59,9 @@ Alert messages using the wi-fi module.
   
   <em>Servo motors</em> <br>
   &ensp; For the water gun mechanism what we needed was to have motors that can provide relatively precise motion in a specific range. In order to achieve this we could have used servo motors or stepper motors. We choosed to use a servo motors and a micro sevo considering the following facts: less consumption of energy which was important in our case and that servo motors are more capable of accelerating loads than steppers. <br>
+  <em>Flame sensors</em>
+  &ensp; These types of sensors are used for short range fire detection.I have found this unit is mostly accurate up to about 3 feet. The flame sensor is very sensitive to IR wavelength at 760 nm ~ 1100 nm light. <br>
+  &ensp; The sensors are connected to analog pins of the <em>Arduino Mega microcontroller<em> for real-time output voltage signal on the thermal resistance. Their function is to send command for stopping the vehivcle at a suitablle distance from the fire and starting the water pump mechanism(pumping water and moving the water gun to put the fire off).
   
  &ensp; We choose an <em> Arduino Mega </em> because we are interested to expand the design and add some moore features.
 
