@@ -15,7 +15,7 @@ University of Bucharest.
 &nbsp; &nbsp; &nbsp; In an event of a fire breakout, fire spreads rapidly if is not controlled and, in case of a gas leakage there even may be an explosion, so firefighters are constantly at a risk of losing their life. In order to overcome this issue, save the life of our heros, our autonomous firefighter robot comes to rescue. 
 
 ## Features:
-&nbsp;  Autonomous firefighter robot, which is able to avoide obstacle and, instantly, detects fire, sends an alert message and activate the emergency mode(self-drive until it reaches the flame and start the water pump mechanism). The water pump mechanism consit from a mini-water pump, a 5V relay module with Status Led, diode and transistor, one servo and one microservo( the servos control the movement of the pump).
+&nbsp; Autonomous firefighter robot, which can avoid obstacle and, instantly,candetect a fire, send an alert message(using the wi-fi module incorporated in Arduino Mega) and activate the emergency mode. The emergency mode consists of self-driving until it reaches the flame and starting the water pump mechanism. The water pump mechanism consit from a mini-water pump, a 5V relay module with Status Led, diode and transistor, one servo and one microservo( the servos control the movement of the pump).
 #### To do:
 Alert messages using the wi-fi module.
 
@@ -59,9 +59,9 @@ Alert messages using the wi-fi module.
   
   <em>Servo motors</em> <br>
   &ensp; For the water gun mechanism what we needed was to have motors that can provide relatively precise motion in a specific range. In order to achieve this we could have used servo motors or stepper motors. We choosed to use a servo motors and a micro sevo considering the following facts: less consumption of energy which was important in our case and that servo motors are more capable of accelerating loads than steppers. <br>
-  <em>Flame sensors</em>
-  &ensp; These types of sensors are used for short range fire detection.I have found this unit is mostly accurate up to about 3 feet. The flame sensor is very sensitive to IR wavelength at 760 nm ~ 1100 nm light. <br>
-  &ensp; The sensors are connected to analog pins of the <em>Arduino Mega microcontroller<em> for real-time output voltage signal on the thermal resistance. Their function is to send command for stopping the vehivcle at a suitablle distance from the fire and starting the water pump mechanism(pumping water and moving the water gun to put the fire off).
+ <br>  <em>Flame sensors</em> <br>
+  &ensp; These types of sensors are used for short range fire detection.I have found taht the sensors are mostly accurate up to about 3 feet. The flame sensor is very sensitive to IR wavelength at 760 nm ~ 1100 nm light. <br>
+  &ensp; The sensors are connected to analog pins of the <em>Arduino Mega microcontroller<em> for real-time output voltage signal on the thermal resistance. Their function is to send command for stopping the vehivcle at a suitablle distance from the fire and starting the water pump mechanism(pumping water and moving the water gun to put the fire off). <br>
   
  &ensp; We choose an <em> Arduino Mega </em> because we are interested to expand the design and add some moore features.
 
