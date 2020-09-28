@@ -27,7 +27,7 @@ Required items:
 Using the passive piezo buzzers we detect a knock and 5 seconds after the knock, with the active piezo buzzer we start a buzzer tone /sound / melody. The song can be stopped using a pushbutton
 
 
-# III. Individually controlling each digit of the segment with the joystick
+## III. Individually controlling each digit of the segment with the joystick
 
 Required items:
 - 1 * 4 digit 7-segment display
