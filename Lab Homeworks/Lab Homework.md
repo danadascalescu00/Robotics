@@ -1,7 +1,6 @@
-
-              __Laboratory Homework__
+# Laboratory Homework
               
-***I. Controlling an RGB Led using 3 potentiometers***
+## I. Controlling an RGB Led using 3 potentiometers
 
 **1. Introduction**
   An RGB Led has three tiny leds of 3 primary colors(red, green and blue) where a terminal is common for all, some of them have positive terminal, known as anode, and some of them have negative anode, known as terminal. When different voltage is applied to different LEDs, they make a mixture and produce everal thousands of colors.(*This example I used a RGB Led with  a common negative terminal or cathode*)
@@ -11,7 +10,7 @@
  You can set it to diode and use - on the long pin and + on a small one. If it lights up, it’s common cathode. Otherwise, use + on the long pin and - on a small one, if it lights up now, then it’s common anode. )
     - The common cathode is connected to the ground and each LED's anode through a resistor to the output pin
     
-***II. Playing Pirates of Caribbean using active and passive piezo buzzers and, also, a pushbutton***<br>
+## II. Playing Pirates of Caribbean using active and passive piezo buzzers and, also, a pushbutton
 
 **1.Introduction**<br>
 
@@ -28,7 +27,7 @@ Required items:
 Using the passive piezo buzzers we detect a knock and 5 seconds after the knock, with the active piezo buzzer we start a buzzer tone /sound / melody. The song can be stopped using a pushbutton
 
 
-***III. Individually controlling each digit of the segment with the joystick***
+# III. Individually controlling each digit of the segment with the joystick
 
 Required items:
 - 1 * 4 digit 7-segment display
@@ -39,7 +38,7 @@ Required items:
 - Connector cable
 
 **Task:**
-Individually controlling each digit of the segment with the joystick. Using the X-axis we cycle through the digit and choose which one to modify. If you press the button the section will be locked. After that, use the Y-axis to modify the value of the digit, both up and down.
+Individually controlling each digit of the segment with the joystick. Using the X-axis we cycle through the digit and choose which one to modify. If you press the button the section will be locked. After that, use the Y-axis to modify the value of the digit, both up and down. <br>
 
 
 ***IV. Creating a game menu using a LCD Display and a joystick***
