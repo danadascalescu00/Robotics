@@ -11,8 +11,8 @@ The game's difficulty will increase with each level (enemies' starships will in
 ## Game specifications
 
 ### Scoring
-* Player's score depends on the number of enemy shipes destroyed. Each player receives a bonus if he can reache the next level without damage caused by the enemy.
-* The last level, when the big boss will appear, brings another chances of receiving bonus score.
+* Player's score depends on the number of enemy shipes destroyed.If a player can advance to the next level without taking damage from the enemy, he obtains a bonus.
+* The last level, when the big boss appears, provides another opportunity to earn bonus points.
 * The first three best scores are saved along with the player's name in the *EEPROM*.
 
 ### Sound
