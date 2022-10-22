@@ -10,7 +10,7 @@
  You can set it to diode and use - on the long pin and + on a small one. If it lights up, it’s common cathode. Otherwise, use + on the long pin and - on a small one, if it lights up now, then it’s common anode. )
     - The common cathode is connected to the ground and each LED's anode through a resistor to the output pin
     
-## II. Playing Pirates of Caribbean using active and passive piezo buzzers and, also, a pushbutton
+## II. Playing Pirates of Caribbean using active and passive piezo buzzers and, a pushbutton
 
 **1.Introduction**<br>
 
@@ -41,7 +41,7 @@ Required items:
 Individually controlling each digit of the segment with the joystick. Using the X-axis we cycle through the digit and choose which one to modify. If you press the button the section will be locked. After that, use the Y-axis to modify the value of the digit, both up and down. <br>
 
 
-***IV. Creating a game menu using a LCD Display and a joystick***
+## IV. Creating a game menu using a LCD Display and a joystick
 
 Required items:
 - 1 * LCD Display
